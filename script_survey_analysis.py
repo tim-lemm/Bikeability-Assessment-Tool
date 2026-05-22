@@ -1,9 +1,10 @@
-import pandas as pd
 from utils_survey_analysis import (
-    executer_regression_mean,
-    executer_regression_all,
-    executer_regression_tree_mean,
-    executer_regression_tree_all,
+    execute_regression_mean,
+    execute_regression_all,
+    execute_regression_tree_mean,
+    execute_regression_tree_all,
+    execute_random_forest,
+    execute_ordered_model,
     preparer_donnees_sondage,
     plot_percentage_bar,
     plot_bike_types,
@@ -50,15 +51,20 @@ def main():
 
     print("\n=== 4. Régressions linéaires ===")
     try:
-        executer_regression_mean(CHEMIN_SUMMARY, test_size = 0.2, random_state = 42)
-        executer_regression_all(CHEMIN_DATABASE, CHEMIN_PERSONNES, CHEMIN_DATAPHOTO, test_size = 0.2, random_state = 42)
+        execute_regression_mean(CHEMIN_SUMMARY, test_size = 0.2, random_state = 42)
+        execute_regression_all(CHEMIN_DATABASE, CHEMIN_PERSONNES, CHEMIN_DATAPHOTO, test_size = 0.2, random_state = 42)
         print("\nRégressions linéaires terminées.")
     except FileNotFoundError:
         raise ValueError(f"Attention: Le fichier {CHEMIN_SUMMARY} n'a pas été trouvé.")
 
     print("\n=== 5. Arbres ===")
-    executer_regression_tree_mean(CHEMIN_SUMMARY, DOSSIER_IMAGES, test_size = 0.2, random_state = 42)
-    executer_regression_tree_all(CHEMIN_DATABASE, CHEMIN_PERSONNES, CHEMIN_DATAPHOTO, DOSSIER_IMAGES, test_size = 0.2, random_state = 42, depth = None)
-
+    execute_regression_tree_mean(CHEMIN_SUMMARY, DOSSIER_IMAGES, test_size = 0.2, random_state = 42)
+    execute_regression_tree_all(CHEMIN_DATABASE, CHEMIN_PERSONNES, CHEMIN_DATAPHOTO, DOSSIER_IMAGES, test_size = 0.2, random_state = 42, depth = None)
+    execute_random_forest(CHEMIN_DATABASE, CHEMIN_PERSONNES, CHEMIN_DATAPHOTO, max_depth = 8, min_samples_leaf=20)
+    print("\n=== 6. Ordered Models ===")
+    # execute_ordered_model(CHEMIN_DATABASE, CHEMIN_PERSONNES, CHEMIN_DATAPHOTO, test_size = 0.2, random_state = 42,
+    #                       distr='logit')
+    # execute_ordered_model(CHEMIN_DATABASE, CHEMIN_PERSONNES, CHEMIN_DATAPHOTO, test_size=0.2, random_state=42,
+    #                       distr='probit')
 if __name__ == "__main__":
     main()
