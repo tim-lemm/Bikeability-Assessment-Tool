@@ -298,3 +298,4 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 /_old/
+_old/
