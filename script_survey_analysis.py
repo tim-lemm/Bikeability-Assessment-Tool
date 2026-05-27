@@ -62,9 +62,9 @@ def main():
     execute_regression_tree_all(CHEMIN_DATABASE, CHEMIN_PERSONNES, CHEMIN_DATAPHOTO, DOSSIER_IMAGES, test_size = 0.2, random_state = 42, depth = None)
     execute_random_forest(CHEMIN_DATABASE, CHEMIN_PERSONNES, CHEMIN_DATAPHOTO, max_depth = 8, min_samples_leaf=20)
     print("\n=== 6. Ordered Models ===")
-    # execute_ordered_model(CHEMIN_DATABASE, CHEMIN_PERSONNES, CHEMIN_DATAPHOTO, test_size = 0.2, random_state = 42,
-    #                       distr='logit')
-    # execute_ordered_model(CHEMIN_DATABASE, CHEMIN_PERSONNES, CHEMIN_DATAPHOTO, test_size=0.2, random_state=42,
-    #                       distr='probit')
+    execute_ordered_model(CHEMIN_DATABASE, CHEMIN_PERSONNES, CHEMIN_DATAPHOTO, test_size = 0.2, random_state = 42,
+                          distr='logit')
+    execute_ordered_model(CHEMIN_DATABASE, CHEMIN_PERSONNES, CHEMIN_DATAPHOTO, test_size=0.2, random_state=42,
+                          distr='probit')
 if __name__ == "__main__":
     main()

@@ -191,7 +191,6 @@ def execute_regression_tree_all(CHEMIN_DATABASE, CHEMIN_PERSONNES, CHEMIN_DATAPH
 
 
     print("\nRegression Tree All - Model Results")
-    print("\nRegression All")
     print(f"Train MSE: {mse_all_train}, R²: {r2_all_train}, mae: {mae_all_train}")
     print(f"Test MSE: {mse_all_test}, R²: {r2_all_test}, mae: {mae_all_test}")
     print(f"Depth: {depth_all}")
@@ -264,7 +263,6 @@ def execute_ordered_model(CHEMIN_DATABASE, CHEMIN_PERSONNES, CHEMIN_DATAPHOTO,te
     plt.show(block=False)
     plt.close()
     return model, result
-
 
 def execute_random_forest(CHEMIN_DATABASE, CHEMIN_PERSONNES, CHEMIN_DATAPHOTO, max_depth=8, min_samples_leaf=5):
     X_train, X_test, y_train, y_test = preprocess_data_for_ordered_model(
