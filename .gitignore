@@ -299,3 +299,8 @@ __marimo__/
 .streamlit/secrets.toml
 /_old/
 _old/
+.idea/
+.idea
+.idea/Bikeability-Assessment-Tool.iml
+.idea/misc.xml
+5
