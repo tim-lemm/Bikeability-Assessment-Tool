@@ -65,60 +65,60 @@ in cycling track type, incline, vehicular speed limits, and surrounding greenery
 
 * **Photo 1:** Voie Lyonnaise N°1 (Lyon 6) | Flat, strict separation between bikes/pedestrians/cars, bordered by a 
 tree-lined promenade.
-![](data/survey/photos/1.JPG)
+![](https://github.com/tim-lemm/Bikeability-Assessment-Tool/blob/58d75ec3c074f49e740e17d6070079c042c163e5/data/survey/photos/1.JPG)
 ---
 * **Photo 2:** Voie Verte Quai du Rhône (Lyon 3) | Flat, separated from cars, shared path between cyclists and pedestrians.
-![](data/survey/photos/2.JPG)
+![](https://github.com/tim-lemm/Bikeability-Assessment-Tool/blob/58d75ec3c074f49e740e17d6070079c042c163e5/data/survey/photos/2.JPG)
 ---
 * **Photo 3:** Rue Crepet (Lyon 7) | Flat, standard painted cycle lane, bordered by a park, car speed limit restricted to 20 km/h.
-![](data/survey/photos/3.JPG)
+![](https://github.com/tim-lemm/Bikeability-Assessment-Tool/blob/58d75ec3c074f49e740e17d6070079c042c163e5/data/survey/photos/3.JPG)
 ---
 * **Photo 4:** Rue Curie (Lyon 6) | Flat, no exclusive cycling track visible, car speed limit restricted to 30 km/h.
-![](data/survey/photos/4.JPG)
+![](https://github.com/tim-lemm/Bikeability-Assessment-Tool/blob/58d75ec3c074f49e740e17d6070079c042c163e5/data/survey/photos/4.JPG)
 ---
 * **Photo 5:** Voie Lyonnaise N°2 and N°11 (Lyon 3) | Flat, strict bike/pedestrian/car separation in a dense intersection zone.
-![](data/survey/photos/5.JPG)
+![](https://github.com/tim-lemm/Bikeability-Assessment-Tool/blob/58d75ec3c074f49e740e17d6070079c042c163e5/data/survey/photos/5.JPG)
 ---
 * **Photo 6:** Parc des Hauteurs (Lyon 5) | Steep slope, shared bike/pedestrian path in a heavily wooded/forested setting.
-![](data/survey/photos/6.JPG)
+![](https://github.com/tim-lemm/Bikeability-Assessment-Tool/blob/58d75ec3c074f49e740e17d6070079c042c163e5/data/survey/photos/6.JPG)
 ---
 * **Photo 7:** Rue de Genève (Lyon 6) | Flat, narrow urban street, car speed limit restricted to 30 km/h.
-![](data/survey/photos/7.JPG)
+![](https://github.com/tim-lemm/Bikeability-Assessment-Tool/blob/58d75ec3c074f49e740e17d6070079c042c163e5/data/survey/photos/7.JPG)
 ---
 * **Photo 8:** Rue de Sèze (Lyon 6) | Flat, painted cycle lane on asphalt, car speed limit restricted to 30 km/h.
-![](data/survey/photos/8.JPG)
+![](https://github.com/tim-lemm/Bikeability-Assessment-Tool/blob/58d75ec3c074f49e740e17d6070079c042c163e5/data/survey/photos/8.JPG)
 ---
 * **Photo 9:** Voie Lyonnaise N°2 (Lyon 3) | Steep slope (underpass/tunnel segment), dedicated separation for 
 bikes/pedestrians/cars.
-![](data/survey/photos/9.JPG)
+![](https://github.com/tim-lemm/Bikeability-Assessment-Tool/blob/58d75ec3c074f49e740e17d6070079c042c163e5/data/survey/photos/9.JPG)
 ---
 * **Photo 10:** Rue Vauban (Lyon 6) | Flat, standard painted cycle lane, car speed limit restricted to 30 km/h.
-![](data/survey/photos/10.JPG)
+![](https://github.com/tim-lemm/Bikeability-Assessment-Tool/blob/58d75ec3c074f49e740e17d6070079c042c163e5/data/survey/photos/10.JPG)
 ---
 * **Photo 11:** Voie Lyonnaise N°3 (Lyon 5) | Moderate slope, dedicated bike/pedestrian/car separation, bordered by a 
 tree-lined promenade.
-![](data/survey/photos/11.JPG)
+![](https://github.com/tim-lemm/Bikeability-Assessment-Tool/blob/58d75ec3c074f49e740e17d6070079c042c163e5/data/survey/photos/11.JPG)
 ---
 * **Photo 12:** Boulevard des Belges (Lyon 6) | Flat, major arterial road with two car lanes + one shared bus/bike lane.
-![](data/survey/photos/12.JPG)
+![](https://github.com/tim-lemm/Bikeability-Assessment-Tool/blob/58d75ec3c074f49e740e17d6070079c042c163e5/data/survey/photos/12.JPG)
 ---
 * **Photo 13:** Cours Franklin Roosevelt (Lyon 6) | Flat, standard painted cycle lane, car speed limit set to 50 km/h.
-![](data/survey/photos/13.JPG)
+![](https://github.com/tim-lemm/Bikeability-Assessment-Tool/blob/58d75ec3c074f49e740e17d6070079c042c163e5/data/survey/photos/13.JPG)
 ---
 * **Photo 14:** Avenue Jean Jaurès (Lyon 7) | Flat, standard painted cycle lane, car speed limit set to 50 km/h.
-![](data/survey/photos/14.JPG)
+![](https://github.com/tim-lemm/Bikeability-Assessment-Tool/blob/58d75ec3c074f49e740e17d6070079c042c163e5/data/survey/photos/14.JPG)
 ---
 * **Photo 15:** Cours Charlemagne (Lyon 2) | Moderate slope, painted cycle lane, car speed limit set to 50 km/h, 
 tree-lined promenade.
-![](data/survey/photos/15.JPG)
+![](https://github.com/tim-lemm/Bikeability-Assessment-Tool/blob/58d75ec3c074f49e740e17d6070079c042c163e5/data/survey/photos/15.JPG)
 ---
 * **Photo 16:** Montée Saint Barthélémy (Lyon 5) | Steep slope, narrow historic street with parked cars, car speed limit
 restricted to 30 km/h.
-![](data/survey/photos/16.JPG)
+![](https://github.com/tim-lemm/Bikeability-Assessment-Tool/blob/58d75ec3c074f49e740e17d6070079c042c163e5/data/survey/photos/16.JPG)
 ---
 * **Photo 17:** Quai de Bondy (Lyon 5) | Moderate slope, dedicated bike/pedestrian/car separation, bordered by an urban 
 tree-lined promenade.
-![](data/survey/photos/17.JPG)
+![](https://github.com/tim-lemm/Bikeability-Assessment-Tool/blob/58d75ec3c074f49e740e17d6070079c042c163e5/data/survey/photos/17.JPG)
 
 ---
 
