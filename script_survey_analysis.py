@@ -13,7 +13,6 @@ from utils_survey_analysis import (
 
 
 def main():
-    # Définition des chemins (avec 'r' pour éviter les avertissements d'échappement invalide)
     CHEMIN_SUMMARY = r"data/survey/summary.csv"
     CHEMIN_DATABASE = r"data/survey/data-base.csv"
     CHEMIN_PERSONNES = r"data/survey/data-personnes.csv"
