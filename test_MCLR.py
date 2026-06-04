@@ -6,31 +6,12 @@ import arviz as az
 from matplotlib import pyplot as plt
 from sklearn.preprocessing import OrdinalEncoder, StandardScaler
 from utils_survey_analysis import import_and_merge_data_base
+from sklearn.metrics import confusion_matrix, classification_report
+import seaborn as sns
 
 #real data
 
 df = import_and_merge_data_base("data/survey/data-base.csv", "data/survey/data-personnes.csv", "data/survey/data-photos.csv")
-
-# fake data
-# data = {
-#     'id_personne':      ["1", "1", "2", "2", "3", "3"],
-#     'age':              ["1", "4", "1", "4", "1", "1"],
-#     'gender':            ['1', '1', '2', '2', '1', '1'],
-#     'job':              ['1','1','6','6','6','6'],
-#     'electric_bike':    ["True", "True", "False", "False", "False", "False"],
-#
-#     'id_photo':         [1, 2, 1, 2, 1, 2],
-#     'type':             ['3', '1', '3', '1', '3', '1'],
-#     'nbr_lane':         [0, 1, 0, 1, 0, 1],
-#     'speed':            ["0","1","0","1","0","1"],
-#     'slope':            ["0","1","0","1","0","1"],
-#     "green":            ["2","1","2","1","2","1"],
-#     'note':           [5, 2, 4, 1, 5, 3]
-# }
-# df = pd.DataFrame(data)
-
-print(df.head())
-
 
 ### === PREPROCESSING ===
 
@@ -129,19 +110,18 @@ with pm.Model() as model:
     y_obs = pm.OrderedLogistic("y_obs", eta=mu, cutpoints=cutpoints, observed=df['note_idx'].values)
 
     idata = pm.sample(draws=1000, tune=1000, return_inferencedata=True)
+    pm.compute_log_likelihood(idata)
 
 ### === MODEL RESULTS ===
 
 print("\n === MODEL RESULTS ===")
-
-# summary = az.summary(idata, var_names=["beta_largeur", "beta_age", "beta_separation"])
-# print(summary)
-#
-# summary_random = az.summary(idata, var_names=["sigma_participant", "sigma_photo"])
-# print(summary_random)
-
 variables_a_afficher = ["beta_age", "beta_gender", "beta_job", "beta_electric_bike", "beta_nbr_lanes", "beta_type", "beta_slope", "beta_speed", "beta_green"]
 
+summary = az.summary(idata, var_names=variables_a_afficher)
+print(summary)
+
+summary_random = az.summary(idata, var_names=variables_a_afficher)
+print(summary_random)
 
 az.plot_forest(
     idata,
@@ -150,8 +130,74 @@ az.plot_forest(
 )
 plt.show()
 
-tableau_resultats = az.summary(idata, var_names=variables_a_afficher)
+az.plot_forest(
+    idata,
+    var_names=['u_personne','v_photo'],
+    combined=True,
+)
+plt.show()
+
+tableau_resultats = az.summary(idata, var_names=variables_a_afficher+['u_personne','v_photo'])
 tableau_resultats.to_excel("resultats_variables.xlsx")
 
 tableau_seuils = az.summary(idata, var_names=["cutpoints"])
 tableau_seuils.to_excel("seuils.xlsx")
+
+# 1. Vérifier s'il y a eu des divergences lors du sampling
+divergences = idata.sample_stats["diverging"].sum().item()
+print(f"Nombre total de divergences : {divergences}")
+
+# 2. Afficher un résumé des warnings de convergence
+# ArviZ affiche automatiquement des alertes si R-hat ou ESS sont mauvais
+print(az.summary(idata, var_names=variables_a_afficher))
+
+# 3. Visualiser les Traces (Traceplot)
+
+az.plot_trace_dist(idata, var_names=variables_a_afficher + ["sigma_personne", "sigma_photo"])
+plt.show()
+
+# 4. Posterior Predictive Checks
+
+with model:
+    # Générer des données à partir de la distribution postérieure
+    pm.sample_posterior_predictive(idata, extend_inferencedata=True)
+
+# Graphique de comparaison
+az.plot_ppc_rootogram(idata)
+plt.show()
+az.plot_rank(idata, var_names=variables_a_afficher)
+
+# 5. Confusion Matrix
+
+# Extraire les prédictions du modèle (forme: chaines x tirages x observations)
+ppc_samples = idata.posterior_predictive["y_obs"].values
+ppc_samples = ppc_samples.reshape(-1, ppc_samples.shape[-1])
+
+# Pour chaque observation, on prend la note médiane ou la plus fréquente (mode) prédite
+y_pred = np.round(np.median(ppc_samples, axis=0)).astype(int)
+y_true = df['note_idx'].values
+cm = confusion_matrix(y_true, y_pred)
+plt.figure(figsize=(8, 6))
+sns.heatmap(
+    cm,
+    annot=True,
+    fmt="d",
+    cmap="Blues",
+    xticklabels=[1, 2, 3, 4, 5],
+    yticklabels=[1, 2, 3, 4, 5]
+)
+plt.ylabel('Valeurs Réelles (Données)')
+plt.xlabel('Valeurs Prédites (Modèle)')
+plt.title('Matrice de Confusion (Médiane des Prédictions)')
+plt.show()
+
+# 6. rapport de classification complet (Précision, Recall, F1-score)
+print("\n === RAPPORT DE CLASSIFICATION ===")
+print(classification_report(y_true, y_pred))
+
+# 7. LOO
+print("\n === LOO-CV ===")
+loo_result= az.loo(idata)
+print(loo_result)
+az.plot_khat(loo_result)
+plt.show()
