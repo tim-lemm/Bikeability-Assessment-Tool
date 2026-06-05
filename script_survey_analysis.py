@@ -18,7 +18,7 @@ def main():
     CHEMIN_PERSONNES = r"data/survey/data-personnes.csv"
     CHEMIN_DATAPHOTO = r"data/survey/data-photos.csv"
     CHEMIN_BEST_WORST = r"data/survey/data-all.csv"
-    DOSSIER_IMAGES = r"outputs/"
+    DOSSIER_IMAGES = r"outputs/model_results/trees/"
 
 
     print("\n=== 1. Nettoyage et Préparation des Données du Sondage ===")

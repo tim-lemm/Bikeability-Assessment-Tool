@@ -32,7 +32,7 @@ def plot_kde(df_1, df_2):
     plt.grid(True)
     plt.show()
 
-results_variables = pd.read_excel("resultats_variables.xlsx")
+results_variables = pd.read_excel("outputs/model_results/MCLR/Model 1_beta_coef.xlsx")
 
 results_ordered = results_variables.sort_values(by="mean")
 results_beta = results_ordered[~results_ordered["Unnamed: 0"].str.startswith(('u_', 'v_'), na=False)]
@@ -45,7 +45,7 @@ plot_histo(results_v_photo, width = 20)
 
 
 
-results_cutpoints = pd.read_excel("seuils.xlsx",index_col=0)
+results_cutpoints = pd.read_excel("outputs/model_results/MCLR/Model 1_seuils.xlsx",index_col=0)
 df_cutpoints = results_cutpoints[results_cutpoints.index.str.contains("cutpoints", na=False)]
 cutpoints_means = sorted(df_cutpoints["mean"].values)
 sns.set_theme(style="white")
