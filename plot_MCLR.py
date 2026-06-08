@@ -34,7 +34,7 @@ def plot_kde(df_1, df_2):
     plt.grid(True)
     plt.show()
 
-def plot_multi_kde(df):
+def plot_multi_kde(df, title = "$\\beta$ Parameters"):
     # Ensure the background style allows for overlapping plots
     sns.set_theme(style="white", rc={"axes.facecolor": (0, 0, 0, 0)})
 
@@ -94,7 +94,7 @@ def plot_multi_kde(df):
     plt.setp(axes[-1].get_xticklabels(), fontsize=12, fontweight="bold")
 
     fig.suptitle(
-        "$\\beta$ Parameters",
+        title,
         fontsize=16,
         fontweight="bold",
         y=0.98,
@@ -102,19 +102,19 @@ def plot_multi_kde(df):
 
     plt.show()
 
-results_variables = pd.read_excel("outputs/model_results/MCLR/Model 1_beta_coef.xlsx")
+results_variables_1 = pd.read_excel("outputs/model_results/MCLR/Model 1_beta_coef.xlsx")
 
-results_ordered = results_variables.sort_values(by="mean")
-results_beta = results_ordered[~results_ordered["Unnamed: 0"].str.startswith(('u_', 'v_'), na=False)]
-plot_histo(results_beta, width = 20)
-results_u_personnes = results_ordered[results_ordered["Unnamed: 0"].str.startswith(('u_'), na=False)]
-results_v_photo = results_ordered[results_ordered["Unnamed: 0"].str.startswith(('v_'), na=False)]
-plot_kde(results_u_personnes, results_v_photo)
-plot_histo(results_u_personnes, width = 40)
-plot_histo(results_v_photo, width = 20)
+results_ordered_1 = results_variables_1.sort_values(by="mean")
+results_beta_1 = results_ordered_1[~results_ordered_1["Unnamed: 0"].str.startswith(('u_', 'v_'), na=False)]
 
+plot_multi_kde(results_beta_1, title = "$\\beta$ Parameters (model 1)")
 
-plot_multi_kde(results_beta)
+results_variables_2 = pd.read_excel("outputs/model_results/MCLR/Model 2_beta_coef.xlsx")
+
+results_ordered_2 = results_variables_2.sort_values(by="mean")
+results_beta_2 = results_ordered_2[~results_ordered_2["Unnamed: 0"].str.startswith(('u_', 'v_'), na=False)]
+
+plot_multi_kde(results_beta_2, title = "$\\beta$ Parameters (model 2)")
 
 
 results_cutpoints = pd.read_excel("outputs/model_results/MCLR/Model 1_seuils.xlsx",index_col=0)
