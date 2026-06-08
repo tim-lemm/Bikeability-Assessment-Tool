@@ -33,11 +33,19 @@ for var in variables_cibles:
 
 # 4. Calcul des corrélations (Méthode de Pearson par défaut)
 print("\n--- CORRÉLATIONS ---")
-corr_age_note = df['age'].corr(df['note'])
-corr_freq_note = df['bike_use_frequency'].corr(df['note'])
+corr_age_note = df['age'].corr(df['note'], method='pearson')
+corr_age_note_kendall = df['age'].corr(df['note'], method='kendall')
+corr_age_note_spearman = df['age'].corr(df['note'], method='spearman')
+corr_freq_note = df['bike_use_frequency'].corr(df['note'], method='pearson')
+corr_freq_note_kendall = df['bike_use_frequency'].corr(df['note'], method='kendall')
+corr_freq_note_spearman = df['bike_use_frequency'].corr(df['note'], method='spearman')
 
-print(f"Corrélation entre l'âge et la note : {corr_age_note:.3f}")
-print(f"Corrélation entre la fréquence d'utilisation et la note : {corr_freq_note:.3f}")
+print(f"Corrélation entre l'âge et la note (pearson): {corr_age_note:.3f}")
+print(f"Corrélation entre l'âge et la note (kendall): {corr_age_note_kendall:.3f}")
+print(f"Corrélation entre l'âge et la note (spearman): {corr_age_note_spearman:.3f}")
+print(f"Corrélation entre la fréquence d'utilisation et la note (pearson): {corr_freq_note:.3f}")
+print(f"Corrélation entre la fréquence d'utilisation et la note (kendall): {corr_freq_note_kendall:.3f}")
+print(f"Corrélation entre la fréquence d'utilisation et la note (spearman): {corr_freq_note_spearman:.3f}")
 
 # ==========================================
 # 5. VISUALISATIONS (Résumé complet)
