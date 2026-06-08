@@ -2,6 +2,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
+from scipy.stats import norm
+
 
 def plot_histo(df, width = 20):
     colors = np.where(df["mean"] >= 0, "#1f77b4", "#d62728")
@@ -32,6 +34,74 @@ def plot_kde(df_1, df_2):
     plt.grid(True)
     plt.show()
 
+def plot_multi_kde(df):
+    # Ensure the background style allows for overlapping plots
+    sns.set_theme(style="white", rc={"axes.facecolor": (0, 0, 0, 0)})
+
+    # Number of groups (months)
+    num_rows = len(df)
+
+    # Create a manual grid of subplots that overlap using gridspec
+    # hspace=-0.3 creates the overlapping "ridge" effect
+    fig, axes = plt.subplots(
+        nrows=num_rows, ncols=1, sharex=True, figsize=(10, num_rows * 0.75)
+    )
+    fig.subplots_adjust(hspace=-0.3)
+
+    # X-axis range: covers a wide range for temperature (adjust if needed)
+    x = np.linspace(df["mean"].min() - 2, df["mean"].max() + 2, 500)
+
+    for i, ax in enumerate(axes):
+        row = df.iloc[i]
+        label = row["Unnamed: 0"] + f" (mean : {row["mean"]})" if "Unnamed: 0" in df.columns else f"Row {i}"
+
+        # 1. Calculate the theoretical Normal Distribution curve using mean and sd
+        y = norm.pdf(x, loc=row["mean"], scale=row["sd"])
+
+        # 2. Determine color based on whether the mean is positive or negative
+        color = "#1f77b4" if row["mean"] >= 0 else "#d62728"
+
+        for v_line in [-3,-2,-1, 0, 1,2,3]:
+            ax.axvline(
+                x=v_line, color="black", linestyle="--", lw=1, zorder=1
+            )
+        # 3. Plot the filled curve and its white outline
+        ax.fill_between(x, 0, y, color=color, alpha=0.85, clip_on=False)
+        ax.plot(x, y, color="white", lw=1.5, clip_on=False)
+
+        # 4. Draw the baseline
+        ax.axhline(y=0, color="black", lw=1.5, clip_on=False)
+
+        # 5. Add the text label on the left
+        ax.text(
+            x.min() + 2,
+            y.max() * 0.1,
+            label,
+            fontweight="bold",
+            fontsize=12,
+            color="black",
+            ha="right",
+        )
+
+        # 6. Clean up the individual axes
+        ax.set_facecolor((0, 0, 0, 0))  # Make transparent
+        ax.set_yticks([])
+        ax.set_ylabel("")
+        sns.despine(ax=ax, bottom=True, left=True)
+
+    # Style the bottom x-axis
+    plt.xlabel("", fontweight="bold", fontsize=14)
+    plt.setp(axes[-1].get_xticklabels(), fontsize=12, fontweight="bold")
+
+    fig.suptitle(
+        "$\\beta$ Parameters",
+        fontsize=16,
+        fontweight="bold",
+        y=0.98,
+    )
+
+    plt.show()
+
 results_variables = pd.read_excel("outputs/model_results/MCLR/Model 1_beta_coef.xlsx")
 
 results_ordered = results_variables.sort_values(by="mean")
@@ -43,6 +113,8 @@ plot_kde(results_u_personnes, results_v_photo)
 plot_histo(results_u_personnes, width = 40)
 plot_histo(results_v_photo, width = 20)
 
+
+plot_multi_kde(results_beta)
 
 
 results_cutpoints = pd.read_excel("outputs/model_results/MCLR/Model 1_seuils.xlsx",index_col=0)
