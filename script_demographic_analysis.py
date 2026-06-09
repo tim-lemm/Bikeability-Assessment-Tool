@@ -57,9 +57,35 @@ fig, axes = plt.subplots(3, 2, figsize=(15, 16))
 axes = axes.flatten()
 
 for i, var in enumerate(variables_cibles):
-    # Le boxplot est idéal car il montre la médiane, la dispersion (écart-type) et les valeurs aberrantes
-    sns.boxplot(data=df, x=var, y='note', ax=axes[i], palette="Set2", hue=var, legend=False)
-    axes[i].set_title(f'Distribution des notes par {var}', fontsize=12, fontweight='bold')
+    # 1. Dessin du Boxplot classique (Affiche la médiane, le rectangle des 50% centraux et les extrêmes)
+    # sns.boxplot(
+    #     data=df,
+    #     x=var,
+    #     y='note',
+    #     ax=axes[i],
+    #     palette="Set2",
+    #     hue=var,
+    #     legend=False,
+    #     boxprops=dict(alpha=0.6)  # On adoucit la couleur des boîtes pour bien voir l'écart-type par-dessus
+    # )
+
+    # 2. AJOUT : Superposition de la Moyenne et de l'Écart-type
+    sns.pointplot(
+        data=df,
+        x=var,
+        y='note',
+        ax=axes[i],
+        errorbar='sd',  # 'sd' = Standard Deviation (Écart-type)
+        palette="Set2",
+        join=False,  # Ne relie pas les points des différentes catégories entre eux
+        capsize=0.15,  # Ajoute des petites barres horizontales aux extrémités de l'écart-type
+        markers='d',  # Un losange ('d' pour diamond) pour représenter la moyenne
+        err_kws={'linewidth': 2.5}  # Épaisseur de la barre d'écart-type
+    )
+
+    # Réglages esthétiques
+    axes[i].set_title(f'Notes par {var}',
+                      fontsize=11, fontweight='bold')
     axes[i].set_ylabel('Note')
     axes[i].set_xlabel(var)
 

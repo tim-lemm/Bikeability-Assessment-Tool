@@ -156,9 +156,6 @@ def build_model_2(df, dims, coords):
         beta_green = pm.Normal("beta_green", mu=0, sigma=1, shape=dims["n_greens"])
 
         # Random effects
-        sigma_personne = pm.HalfNormal("sigma_personne", sigma=1)
-        u_personne = pm.Normal("u_personne", mu=0, sigma=sigma_personne, shape=dims["n_personne"])
-
         sigma_photo = pm.HalfNormal("sigma_photo", sigma=1)
         v_photo = pm.Normal("v_photo", mu=0, sigma=sigma_photo, shape=dims["n_photos"])
 
@@ -200,6 +197,16 @@ def run_sampling(model, draws=1000, tune=1000):
         idata = pm.sample(draws=draws, tune=tune, return_inferencedata=True)
         pm.compute_log_likelihood(idata)
     return idata
+
+def prior_predictive_checks (model, save = False, model_label = "model"):
+    save_path = f"outputs/model_results/MCLR/"
+    with model:
+        dt = pm.sample_prior_predictive(draws=500)
+        pc = az.plot_ppc_dist(dt, group="prior_predictive")
+        if save:
+            plt.savefig(save_path + f"{model_label}_prior_predictive_plot.png")
+        else:
+            plt.show()
 
 
 def evaluate_and_save_results(model, idata, df, var_names, model_label="Model", save = True):
@@ -266,9 +273,15 @@ def evaluate_and_save_results(model, idata, df, var_names, model_label="Model", 
     with model:
         pm.sample_posterior_predictive(idata, extend_inferencedata=True)
 
-    az.plot_ppc_rootogram(idata)
+    az.plot_ppc_dist(idata)
     if save:
-        plt.savefig(save_path + f"{model_label}_ppc_rootogram_plot.png")
+        plt.savefig(save_path + f"{model_label}_ppc_dist_plot.png")
+    else :
+        plt.show()
+
+    az.plot_ppc_pava(idata, data_type="categorical")
+    if save:
+        plt.savefig(save_path + f"{model_label}_ppc_pava_plot.png")
     else :
         plt.show()
 

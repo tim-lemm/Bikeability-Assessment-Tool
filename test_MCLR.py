@@ -4,7 +4,8 @@ from utils_MCLR import (
     build_model_1,
     build_model_2,
     run_sampling,
-    evaluate_and_save_results
+    evaluate_and_save_results,
+    prior_predictive_checks
 )
 
 
@@ -34,6 +35,7 @@ def main():
         "beta_nbr_lanes", "beta_type", "beta_slope", "beta_speed", "beta_green"
     ]
     evaluate_and_save_results(model_1, idata_1, df, variables_m1, model_label="Model 1")
+    prior_predictive_checks(model_1, save = True, model_label="Model 1")
 
     # 4. Model 2 Execution (Restricted Model)
     print("\n=== MODEL 2 CONSTRUCTION ===")
@@ -44,7 +46,7 @@ def main():
 
     variables_m2 = ["beta_nbr_lanes", "beta_type", "beta_slope", "beta_speed", "beta_green"]
     evaluate_and_save_results(model_2, idata_2, df, variables_m2, model_label="Model 2")
-
+    prior_predictive_checks(model_2, save=True, model_label="Model 2")
 
 if __name__ == "__main__":
     main()
