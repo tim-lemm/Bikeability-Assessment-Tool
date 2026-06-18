@@ -132,6 +132,123 @@ def build_model_1(df, dims, coords):
 
     return model
 
+def build_model_1_bis(df, dims, coords):
+    """
+    Builds the first PyMC Ordered Logistic model containing both
+    individual socio-demographic features and photo attributes (Full Model).
+    """
+    with pm.Model() as model:
+        # Cutpoints
+        cutpoints = pm.Normal(
+            'cutpoints',
+            mu=np.linspace(-2, 2, dims["n_notes"] - 1),
+            sigma=1,
+            transform=tr.ordered,
+            shape=dims["n_notes"] - 1
+        )
+
+        # Fixed parameters (Socio-demographic)
+        beta_age = pm.Normal("beta_age", mu=0, sigma=1, shape=dims["n_ages"])
+        beta_gender = pm.Normal("beta_gender", mu=0, sigma=1, shape=dims["n_genders"], dims="categories_gender")
+        beta_job = pm.Normal("beta_job", mu=0, sigma=1, shape=dims["n_jobs"])
+        beta_electric_bike = pm.Normal("beta_electric_bike", mu=0, sigma=1, shape=dims["n_electric_bikes"])
+        beta_bike_use_frequency = pm.Normal("beta_bike_use_frequency", mu=0, sigma=1, shape=dims["n_bike_use_frequency"])
+        beta_bike_ownership = pm.Normal("beta_bike_ownership", mu=0, sigma=1, shape=dims["n_bike_ownership"])
+
+        # Fixed parameters (Photo attributes)
+        beta_nbr_lanes = pm.Normal("beta_nbr_lanes", mu=0, sigma=1)
+        beta_type = pm.StudentT("beta_type", nu = 3, mu=0, sigma=1, shape=dims["n_types"], dims="categories_separation")
+        beta_slope = pm.Laplace("beta_slope", mu=0, b=0.5, shape=dims["n_slopes"])
+        beta_speed = pm.Normal("beta_speed", mu=0, sigma=1, shape=dims["n_speeds"])
+        beta_green = pm.Laplace("beta_green", mu=0, b=0.5, shape=dims["n_greens"])
+
+        # Random effects
+        sigma_personne = pm.HalfNormal("sigma_personne", sigma=1)
+        u_personne = pm.Normal("u_personne", mu=0, sigma=sigma_personne, shape=dims["n_personne"])
+
+        sigma_photo = pm.HalfNormal("sigma_photo", sigma=1)
+        v_photo = pm.Normal("v_photo", mu=0, sigma=sigma_photo, shape=dims["n_photos"])
+
+        # Latent variable linear combination
+        mu = (
+                u_personne[df['id_personne_idx'].values] +
+                beta_age[df['age_idx'].values] +
+                beta_gender[df['gender_idx'].values] +
+                beta_job[df['job_idx'].values] +
+                beta_electric_bike[df['electric_bike_idx'].values] +
+                beta_bike_use_frequency[df['bike_use_frequency_idx'].values] +
+                beta_bike_ownership[df['bike_ownership_idx'].values] +
+
+                v_photo[df['id_photo_idx'].values] +
+                beta_nbr_lanes * df['nbr_lane_scaled'].values +
+                beta_type[df['type_idx'].values] +
+                beta_slope[df['slope_idx'].values] +
+                beta_speed[df['speed_idx'].values] +
+                beta_green[df['green_idx'].values]
+        )
+
+        pm.OrderedLogistic("y_obs", eta=mu, cutpoints=cutpoints, observed=df['note_idx'].values)
+
+    return model
+
+def build_model_1_ter(df, dims, coords):
+    """
+    Builds the first PyMC Ordered Logistic model containing both
+    individual socio-demographic features and photo attributes (Full Model).
+    """
+    with pm.Model() as model:
+        # Cutpoints
+        cutpoints = pm.Normal(
+            'cutpoints',
+            mu=np.linspace(-2, 2, dims["n_notes"] - 1),
+            sigma=1,
+            transform=tr.ordered,
+            shape=dims["n_notes"] - 1
+        )
+
+        # Fixed parameters (Socio-demographic)
+        beta_age = pm.Normal("beta_age", mu=0, sigma=1, shape=dims["n_ages"])
+        beta_gender = pm.Normal("beta_gender", mu=0, sigma=1, shape=dims["n_genders"], dims="categories_gender")
+        beta_job = pm.Normal("beta_job", mu=0, sigma=1, shape=dims["n_jobs"])
+        beta_electric_bike = pm.Normal("beta_electric_bike", mu=0, sigma=1, shape=dims["n_electric_bikes"])
+        beta_bike_use_frequency = pm.Normal("beta_bike_use_frequency", mu=0, sigma=1, shape=dims["n_bike_use_frequency"])
+        beta_bike_ownership = pm.Normal("beta_bike_ownership", mu=0, sigma=1, shape=dims["n_bike_ownership"])
+
+        # Fixed parameters (Photo attributes)
+        beta_nbr_lanes = pm.Laplace("beta_nbr_lanes", mu=0, b=0.5)
+        beta_type = pm.Normal("beta_type", mu=0, sigma=1, shape=dims["n_types"], dims="categories_separation")
+        beta_slope = pm.Laplace("beta_slope", mu=0, b=0.5, shape=dims["n_slopes"])
+        beta_speed = pm.Laplace("beta_speed", mu=0, b=0.5, shape=dims["n_speeds"])
+        beta_green = pm.Laplace("beta_green", mu=0, b=0.5, shape=dims["n_greens"])
+
+        # Random effects
+        sigma_personne = pm.HalfNormal("sigma_personne", sigma=1)
+        u_personne = pm.Normal("u_personne", mu=0, sigma=sigma_personne, shape=dims["n_personne"])
+
+        sigma_photo = pm.HalfNormal("sigma_photo", sigma=1)
+        v_photo = pm.Normal("v_photo", mu=0, sigma=sigma_photo, shape=dims["n_photos"])
+
+        # Latent variable linear combination
+        mu = (
+                u_personne[df['id_personne_idx'].values] +
+                beta_age[df['age_idx'].values] +
+                beta_gender[df['gender_idx'].values] +
+                beta_job[df['job_idx'].values] +
+                beta_electric_bike[df['electric_bike_idx'].values] +
+                beta_bike_use_frequency[df['bike_use_frequency_idx'].values] +
+                beta_bike_ownership[df['bike_ownership_idx'].values] +
+
+                v_photo[df['id_photo_idx'].values] +
+                beta_nbr_lanes * df['nbr_lane_scaled'].values +
+                beta_type[df['type_idx'].values] +
+                beta_slope[df['slope_idx'].values] +
+                beta_speed[df['speed_idx'].values] +
+                beta_green[df['green_idx'].values]
+        )
+
+        pm.OrderedLogistic("y_obs", eta=mu, cutpoints=cutpoints, observed=df['note_idx'].values)
+
+    return model
 
 def build_model_2(df, dims, coords):
     """
@@ -173,6 +290,45 @@ def build_model_2(df, dims, coords):
 
     return model_2
 
+def build_model_2_bis(df, dims, coords):
+    """
+    Builds the second PyMC Ordered Logistic model containing only
+    photo attributes and context random effects (Restricted Model).
+    """
+    with pm.Model() as model_2_bis:
+        # Cutpoints
+        cutpoints = pm.Normal(
+            'cutpoints',
+            mu=np.linspace(-2, 2, dims["n_notes"] - 1),
+            sigma=1,
+            transform=tr.ordered,
+            shape=dims["n_notes"] - 1
+        )
+
+        # Fixed parameters (Photo attributes only)
+        beta_nbr_lanes = pm.Normal("beta_nbr_lanes", mu=0, sigma=1)
+        beta_type = pm.StudentT("beta_type", nu=3, mu=0, sigma=1, shape=dims["n_types"], dims="categories_separation")
+        beta_slope = pm.Laplace("beta_slope", mu=0, b=0.5, shape=dims["n_slopes"])
+        beta_speed = pm.Normal("beta_speed", mu=0, sigma=1, shape=dims["n_speeds"])
+        beta_green = pm.Laplace("beta_green", mu=0, b=0.5, shape=dims["n_greens"])
+
+        # Random effects
+        sigma_photo = pm.HalfNormal("sigma_photo", sigma=1)
+        v_photo = pm.Normal("v_photo", mu=0, sigma=sigma_photo, shape=dims["n_photos"])
+
+        # Latent variable linear combination
+        mu = (
+                v_photo[df['id_photo_idx'].values] +
+                beta_nbr_lanes * df['nbr_lane_scaled'].values +
+                beta_type[df['type_idx'].values] +
+                beta_slope[df['slope_idx'].values] +
+                beta_speed[df['speed_idx'].values] +
+                beta_green[df['green_idx'].values]
+        )
+
+        pm.OrderedLogistic("y_obs", eta=mu, cutpoints=cutpoints, observed=df['note_idx'].values)
+
+    return model_2_bis
 
 def run_sampling(model, draws=1000, tune=1000):
     """

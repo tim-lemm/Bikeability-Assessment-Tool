@@ -3,11 +3,15 @@ from utils_MCLR import (
     load_and_preprocess_data,
     build_model_1,
     build_model_2,
+    build_model_1_bis,
+    build_model_1_ter,
+    build_model_2_bis,
     run_sampling,
     evaluate_and_save_results,
     prior_predictive_checks
 )
-
+import matplotlib.pyplot as plt
+import arviz as az
 
 def main():
     # Ensure outputs directory exists
@@ -26,27 +30,50 @@ def main():
     # 3. Model 1 Execution (Full Model)
     print("\n=== MODEL 1 CONSTRUCTION ===")
     model_1 = build_model_1(df, dims, coords)
-
+    model_1_bis = build_model_1_bis(df, dims, coords)
+    model_1_ter = build_model_1_ter(df, dims, coords)
     print("\n=== MODEL 1 SAMPLING ===")
     idata_1 = run_sampling(model_1, draws=1000, tune=1000)
-
+    idata_1_bis = run_sampling(model_1_bis, draws=1000, tune=1000)
+    idata_1_ter = run_sampling(model_1_ter, draws=1000, tune=1000)
     variables_m1 = [
         "beta_age", "beta_gender", "beta_job", "beta_electric_bike", "beta_bike_use_frequency", "beta_bike_ownership",
         "beta_nbr_lanes", "beta_type", "beta_slope", "beta_speed", "beta_green"
     ]
     evaluate_and_save_results(model_1, idata_1, df, variables_m1, model_label="Model 1")
+    evaluate_and_save_results(model_1_bis, idata_1_bis, df, variables_m1, model_label="Model 1 bis")
+    evaluate_and_save_results(model_1_ter, idata_1_ter, df, variables_m1, model_label="Model 1 ter")
     prior_predictive_checks(model_1, save = True, model_label="Model 1")
+    prior_predictive_checks(model_1_bis, save = True, model_label="Model 1 bis")
+    prior_predictive_checks(model_1_ter, save = True, model_label="Model 1 ter")
 
     # 4. Model 2 Execution (Restricted Model)
     print("\n=== MODEL 2 CONSTRUCTION ===")
     model_2 = build_model_2(df, dims, coords)
+    model_2_bis = build_model_2_bis(df, dims, coords)
 
     print("\n=== MODEL 2 SAMPLING ===")
     idata_2 = run_sampling(model_2, draws=1000, tune=1000)
+    idata_2_bis = run_sampling(model_2_bis, draws=1000, tune=1000)
 
     variables_m2 = ["beta_nbr_lanes", "beta_type", "beta_slope", "beta_speed", "beta_green"]
     evaluate_and_save_results(model_2, idata_2, df, variables_m2, model_label="Model 2")
+    evaluate_and_save_results(model_2_bis,idata_2_bis, df, variables_m2, model_label="Model 2 bis")
     prior_predictive_checks(model_2, save=True, model_label="Model 2")
+    prior_predictive_checks(model_2_bis, save=True, model_label="Model 2 bis")
+
+    # 5. Model comparaison
+    model_dict = {"Model 1": idata_1,
+                  "Model 1 bis": idata_1_bis,
+                  "Model 1 ter": idata_1_ter,
+                  "Model 2": idata_2,
+                  "Model 2 bis": idata_2_bis
+                  }
+    df_compare = az.compare(model_dict, var_name = "y_obs")
+    print("\n=== COMPARISON RESULTS ===")
+    print(df_compare)
+    az.plot_compare(df_compare)
+    plt.show()
 
 if __name__ == "__main__":
     main()
