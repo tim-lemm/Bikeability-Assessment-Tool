@@ -39,7 +39,8 @@ print("=== Entrainement du modèle ===")
 
 # 1. Initialisation du modèle
 
-model = HistGradientBoostingClassifier()
+model = HistGradientBoostingClassifier(categorical_features=liste_cat)
+model.fit(X_train, y_train)
 # 2. Entraînement
 model.fit(X_train, y_train)
 
@@ -67,7 +68,7 @@ def run_single_fold(train_idx, test_idx):
     X_train_fold, X_test_fold = X.iloc[train_idx], X.iloc[test_idx]
     y_train_fold, y_test_fold = y.iloc[train_idx], y.iloc[test_idx]
 
-    model_fold = HistGradientBoostingClassifier()
+    model_fold = HistGradientBoostingClassifier(categorical_features=liste_cat)
     model_fold.fit(X_train_fold, y_train_fold)
 
     return y_test_fold.values[0], model_fold.predict(X_test_fold)[0]
