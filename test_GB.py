@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from sklearn.model_selection import train_test_split, LeaveOneOut
 import seaborn as sns
-from sklearn.ensemble import HistGradientBoostingClassifier
+from sklearn.ensemble import HistGradientBoostingClassifier, GradientBoostingClassifier, AdaBoostClassifier
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error, classification_report, confusion_matrix, ConfusionMatrixDisplay
 import shap
 import lightgbm as lgb
@@ -39,7 +39,8 @@ print("=== Entrainement du modèle ===")
 
 # 1. Initialisation du modèle
 
-model = HistGradientBoostingClassifier(categorical_features=liste_cat)
+
+model = AdaBoostClassifier()
 model.fit(X_train, y_train)
 # 2. Entraînement
 model.fit(X_train, y_train)
@@ -68,7 +69,7 @@ def run_single_fold(train_idx, test_idx):
     X_train_fold, X_test_fold = X.iloc[train_idx], X.iloc[test_idx]
     y_train_fold, y_test_fold = y.iloc[train_idx], y.iloc[test_idx]
 
-    model_fold = HistGradientBoostingClassifier(categorical_features=liste_cat)
+    model_fold = AdaBoostClassifier()
     model_fold.fit(X_train_fold, y_train_fold)
 
     return y_test_fold.values[0], model_fold.predict(X_test_fold)[0]
@@ -111,24 +112,3 @@ plt.show()
 print("\n--- RÉSULTATS GLOBAUX LOOCV ---")
 print(f"MAE Globale : {mae_global:.3f}")
 print(f"R² Global   : {r2_global:.3f}")
-
-df_res = pd.DataFrame({'Réel': y_true_all, 'Prédit (Brut)': y_pred_all, 'Prédit (Arrondi)': y_pred_rounded})
-print("\nAperçu des premières prédictions :")
-print(df_res.head(10))
-
-## === SHAP ===
-print("=== Analyse SHAP ===")
-
-# 1. Sélection d'un échantillon pour l'interprétation
-X_explain = X_test.sample(500, random_state=42)
-
-# 2. Création de l'explainer (spécifique aux modèles d'arbres)
-explainer = shap.TreeExplainer(model)
-
-# 3. Calcul des SHAP values
-shap_values = explainer(X_explain)
-
-## === VIZ ===
-print("=== Visualization ===")
-
-shap.summary_plot(shap_values, X_explain)
