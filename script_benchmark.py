@@ -1,3 +1,5 @@
+from importlib.metadata import FastPath
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -57,7 +59,7 @@ def compute_metrics(y_true, y_pred_discrete, y_pred_raw):
     }
 
 
-def plot_confusion_matrices(y_true, dict_preds, title_suffix=""):
+def plot_confusion_matrices(y_true, dict_preds, title_suffix="", save=False):
     fig, axes = plt.subplots(2, 3, figsize=(18, 11))
     axes = axes.ravel()
     labels = [1, 2, 3, 4, 5]
@@ -72,7 +74,10 @@ def plot_confusion_matrices(y_true, dict_preds, title_suffix=""):
 
     plt.suptitle(f"Matrices de Confusion - {title_suffix}", fontsize=16, fontweight='bold', y=0.98)
     plt.tight_layout()
-    plt.show()
+    if save:
+        plt.savefig(f"outputs/model_results/benchmark/confusion_matrix_{title_suffix}.png")
+    else :
+        plt.show()
 
 
 def benchmark_train_test(X, y):
@@ -140,9 +145,11 @@ if __name__ == "__main__":
     print("=== Benchmark : Train / Test ===")
     df_results_tt, y_test_tt, preds_tt = benchmark_train_test(X, y)
     print(df_results_tt.to_string(index=False))
-    plot_confusion_matrices(y_test_tt, preds_tt, title_suffix="Train / Test Split")
+    df_results_tt.to_csv("outputs/model_results/benchmark/base_results.csv")
+    plot_confusion_matrices(y_test_tt, preds_tt, title_suffix="Base", save=True)
 
-    # print("\n=== Benchmark : LOOCV ===")
-    # df_results_loocv, y_true_loo, preds_loo = benchmark_loocv(X, y)
-    # print(df_results_loocv.to_string(index=False))
-    # plot_confusion_matrices(y_true_loo, preds_loo, title_suffix="LOOCV")
+    print("\n=== Benchmark : LOOCV ===")
+    df_results_loocv, y_true_loo, preds_loo = benchmark_loocv(X, y)
+    df_results_loocv.to_csv("outputs/model_results/benchmark/loocv_results.csv")
+    print(df_results_loocv.to_string(index=False))
+    plot_confusion_matrices(y_true_loo, preds_loo, title_suffix="LOOCV", save=True)
