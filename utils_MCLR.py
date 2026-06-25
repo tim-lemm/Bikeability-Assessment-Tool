@@ -5,9 +5,11 @@ import pymc.distributions.transforms as tr
 import arviz as az
 from matplotlib import pyplot as plt
 from sklearn.preprocessing import OrdinalEncoder, StandardScaler
-from sklearn.metrics import confusion_matrix, classification_report
+from sklearn.model_selection import ShuffleSplit
+from sklearn.metrics import confusion_matrix, classification_report, accuracy_score, f1_score, mean_absolute_error
 import seaborn as sns
 from utils_survey_analysis import import_and_merge_data_base
+import xarray as xr
 
 
 def load_and_preprocess_data(base_path, personnes_path, photos_path):
@@ -481,3 +483,78 @@ def evaluate_and_save_results(model, idata, df, var_names, model_label="Model", 
         plt.savefig(save_path + f"{model_label}_khat_plot.png")
     else :
         plt.show()
+
+
+def run_benchmark(df, dims, coords, model_factories, n_splits=5, draws=1000, tune=1000):
+    """
+    Exécute une validation croisée de type Monte Carlo (Train-Test Split 80/20 répété)
+    sur l'ensemble des modèles fournis pour évaluer leur capacité prédictive.
+    """
+    print(f"\n⚡ DÉMARRAGE DU BENCHMARK (Train-Test Split 80/20 répété {n_splits} fois)...")
+
+    rs = ShuffleSplit(n_splits=n_splits, test_size=0.2, random_state=42)
+    raw_results = {name: [] for name in model_factories.keys()}
+
+    for fold, (train_idx, test_idx) in enumerate(rs.split(df)):
+        print(f"\n🔄 --- FOLD {fold + 1} / {n_splits} ---")
+        df_train = df.iloc[train_idx].copy()
+        df_test = df.iloc[test_idx].copy()
+
+        for model_name, model_builder in model_factories.items():
+            print(f"▶️ Entraînement de [{model_name}]...")
+
+            # 1. Ajustement sur le jeu d'entraînement
+            train_model = model_builder(df_train, dims, coords)
+            with train_model:
+                idata_train = pm.sample(draws=draws, tune=tune, return_inferencedata=True, progressbar=False,
+                                        random_seed=42)
+
+            print(f"Prédiction de [{model_name}] sur le jeu de test...")
+
+            posterior_ds = idata_train["posterior"].dataset
+            posterior_cleaned = posterior_ds.drop_vars("y_obs_probs", errors="ignore")
+
+            idata_posterior_only = xr.DataTree()
+            idata_posterior_only["posterior"] = posterior_cleaned
+
+            # 2. Reconstruction du modèle avec les données de test (748 observations)
+            test_model = model_builder(df_test, dims, coords)
+            with test_model:
+                ppc = pm.sample_posterior_predictive(idata_posterior_only, progressbar=False, random_seed=42)
+
+            # 3. Extraction et réduction des prédictions (Médiane des tirages)
+            ppc_samples = ppc.posterior_predictive["y_obs"].values
+            ppc_samples = ppc_samples.reshape(-1, ppc_samples.shape[-1])
+
+            y_pred = np.round(np.median(ppc_samples, axis=0)).astype(int)
+            y_true = df_test['note_idx'].values
+
+            # 4. Calcul des métriques
+            acc = accuracy_score(y_true, y_pred)
+            f1 = f1_score(y_true, y_pred, average='macro')
+            mae = mean_absolute_error(y_true, y_pred)
+
+            print(f"   ↳ [Scores Fold {fold + 1}] Accuracy: {acc:.3f} | F1 Macro: {f1:.3f} | MAE: {mae:.3f}")
+
+            raw_results[model_name].append({
+                'fold': fold + 1,
+                'accuracy': acc,
+                'f1_macro': f1,
+                'mae': mae
+            })
+
+    # 5. Synthèse et agrégation statistique des scores
+    summary_rows = []
+    for model_name, metrics in raw_results.items():
+        metrics_df = pd.DataFrame(metrics)
+        summary_rows.append({
+            'Modèle': model_name,
+            'Accuracy (Mean)': metrics_df['accuracy'].mean(),
+            'Accuracy (Std)': metrics_df['accuracy'].std(),
+            'F1 Macro (Mean)': metrics_df['f1_macro'].mean(),
+            'F1 Macro (Std)': metrics_df['f1_macro'].std(),
+            'MAE (Mean)': metrics_df['mae'].mean(),
+            'MAE (Std)': metrics_df['mae'].std(),
+        })
+
+    return pd.DataFrame(summary_rows)
