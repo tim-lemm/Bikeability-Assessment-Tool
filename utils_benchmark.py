@@ -178,3 +178,13 @@ def get_models():
         "Random Forest": RandomForestClassifier(random_state=42),
         "Ada Boost": AdaBoostClassifier(random_state=42)
     }
+
+def get_models_gb():
+    return {
+        "Gradient Boost 0": GradientBoostingClassifier(random_state=42),
+        "Gradient Boost 1": GradientBoostingClassifier(random_state=42, max_depth=1),
+        "Gradient Boost 2": GradientBoostingClassifier(random_state=42, max_depth=2),
+        "Gradient Boost 3": GradientBoostingClassifier(random_state=42, max_depth=3),
+        "Gradient Boost 4": GradientBoostingClassifier(random_state=42, max_depth=4),
+        "Gradient Boost 5": GradientBoostingClassifier(random_state=42, max_depth=5)
+    }
