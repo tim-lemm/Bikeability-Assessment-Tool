@@ -4,8 +4,8 @@ import os
 import seaborn as sns
 import numpy as np
 
-from sklearn.model_selection import train_test_split, ShuffleSplit, LeaveOneOut, cross_val_predict
-from sklearn.metrics import accuracy_score, mean_absolute_error, precision_score, confusion_matrix
+from sklearn.model_selection import train_test_split, ShuffleSplit, LeaveOneOut, cross_val_predict, StratifiedKFold, StratifiedShuffleSplit, GridSearchCV
+from sklearn.metrics import accuracy_score, mean_absolute_error, precision_score, confusion_matrix, balanced_accuracy_score
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import (
     GradientBoostingClassifier,
@@ -17,9 +17,11 @@ from sklearn.ensemble import (
 from utils_MCLR import load_and_preprocess_data
 
 
-def plot_confusion_matrices(y_true, dict_preds, title_suffix="", save=False):
-    fig, axes = plt.subplots(2, 3, figsize=(18, 11))
-    axes = axes.ravel()
+def plot_confusion_matrices(y_true, dict_preds, title_suffix="", save=False, nrows=2, ncols=3):
+    fig, axes = plt.subplots(nrows, ncols, figsize=(ncols*6, nrows*5.5))
+    if nrows != 1 and ncols != 1:
+        axes = axes.ravel()
+
     labels = [1, 2, 3, 4, 5]
 
     for idx, (name, y_pred) in enumerate(dict_preds.items()):
@@ -39,10 +41,10 @@ def plot_confusion_matrices(y_true, dict_preds, title_suffix="", save=False):
     else:
         plt.show()
 
-
 def get_metrics(y_true, y_pred):
     metrics = {
         'Accuracy': accuracy_score(y_true, y_pred),
+        'Balanced Accuracy': balanced_accuracy_score(y_true, y_pred),
         'MAE': mean_absolute_error(y_true, y_pred)
     }
     precision = precision_score(y_true, y_pred, average=None, labels=[1, 2, 3, 4, 5], zero_division=0)
@@ -50,12 +52,10 @@ def get_metrics(y_true, y_pred):
         metrics[f'Precision_Class_{i}'] = p
     return metrics
 
-
 def _split_data(X, y, train_idx, test_idx):
     if hasattr(X, "iloc"):
         return X.iloc[train_idx], X.iloc[test_idx], y.iloc[train_idx], y.iloc[test_idx]
     return X[train_idx], X[test_idx], y[train_idx], y[test_idx]
-
 
 def run_train_test(models, X, y, test_size=0.2, random_state=42):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
@@ -82,9 +82,8 @@ def run_train_test(models, X, y, test_size=0.2, random_state=42):
 
     return pd.DataFrame(results).T, dict_preds_train, y_train, dict_preds_test, y_test
 
-
 def run_shufflesplit(models, X, y, n_splits=5, test_size=0.2, random_state=42):
-    cv = ShuffleSplit(n_splits=n_splits, test_size=test_size, random_state=random_state)
+    cv = StratifiedShuffleSplit(n_splits=n_splits, test_size=test_size, random_state=random_state)
     results = {}
     dict_preds_train = {}
     dict_preds_test = {}
@@ -122,7 +121,6 @@ def run_shufflesplit(models, X, y, n_splits=5, test_size=0.2, random_state=42):
         dict_preds_test[name] = np.array(all_test_preds)
 
     return pd.DataFrame(results).T, dict_preds_train, y_train_concat, dict_preds_test, y_test_concat
-
 
 def run_loo(models, X, y):
     cv = LeaveOneOut()
@@ -188,3 +186,44 @@ def get_models_gb():
         "Gradient Boost 4": GradientBoostingClassifier(random_state=42, max_depth=4),
         "Gradient Boost 5": GradientBoostingClassifier(random_state=42, max_depth=5)
     }
+
+def optimize_gradient_boosting(X, y, param_grid):
+    # 1. Définition du modèle de base
+    gb = GradientBoostingClassifier(random_state=42)
+    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+    # 2. Définition de la grille d'hyperparamètres à tester
+
+    # 3. Choix du score à optimiser
+    scoring_metric = 'balanced_accuracy'
+
+    print("Lancement de la recherche des hyperparamètres optimaux (GridSearchCV)...")
+
+    # 4. Configuration du GridSearch (ici en 5-fold cross-validation)
+    grid_search = GridSearchCV(
+        estimator=gb,
+        param_grid=param_grid,
+        scoring=scoring_metric,
+        cv=cv,
+        n_jobs=-1,
+        verbose=3,
+        return_train_score=True
+    )
+
+    # 5. Exécution de la recherche
+    grid_search.fit(X, y)
+
+    results_df = pd.DataFrame(grid_search.cv_results_)
+
+    cols_to_keep = ['params', 'mean_train_score', 'mean_test_score']
+    print(results_df[cols_to_keep].sort_values(by='mean_test_score', ascending=False))
+
+    # --- Affichage des meilleurs résultats ---
+    print("\n--- Résultats de l'optimisation ---")
+    print(f"Meilleur score ({scoring_metric}) : {grid_search.best_score_:.4f}")
+    print("Meilleurs hyperparamètres trouvés :", grid_search.best_params_)
+
+    best_index = grid_search.best_index_
+    print(f"\nScore Train du meilleur modèle : {results_df.loc[best_index, 'mean_train_score']:.4f}")
+    print(f"Score Test du meilleur modèle  : {results_df.loc[best_index, 'mean_test_score']:.4f}")
+
+    return grid_search.best_estimator_, grid_search.best_params_

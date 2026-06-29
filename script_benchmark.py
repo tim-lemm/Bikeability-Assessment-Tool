@@ -1,21 +1,23 @@
-from utils_benchmark import run_train_test, run_shufflesplit, run_loo, load_and_prepare_data, get_models, get_models_gb, plot_confusion_matrices
+from sklearn.metrics import accuracy_score, balanced_accuracy_score
+from utils_benchmark import run_train_test, run_shufflesplit, run_loo, load_and_prepare_data, get_models, get_models_gb, plot_confusion_matrices, get_metrics, optimize_gradient_boosting
 import pandas as pd
 import os
 from sklearn.ensemble import GradientBoostingClassifier, HistGradientBoostingClassifier
-from sklearn.model_selection import GridSearchCV, train_test_split
+from sklearn.model_selection import GridSearchCV, train_test_split, StratifiedKFold
 
 random_state=42
 n_splits=5
+output_dir = "outputs/model_results/benchmark"
+base_csv = "data/survey/data-base.csv"
+personnes_csv = "data/survey/data-personnes.csv"
+photos_csv = "data/survey/data-photos.csv"
 
 def main():
-    base_csv = "data/survey/data-base.csv"
-    personnes_csv = "data/survey/data-personnes.csv"
-    photos_csv = "data/survey/data-photos.csv"
+
 
     X, y = load_and_prepare_data(base_csv, personnes_csv, photos_csv)
-    models = get_models_gb()
-    name = "_gb"
-    output_dir = "outputs/model_results/benchmark"
+    models = (get_models())
+    name = ""
     os.makedirs(output_dir, exist_ok=True)
 
     # 1. TRAIN / TEST SPLIT
@@ -38,7 +40,7 @@ def main():
     plot_confusion_matrices(y_test_ss, preds_test_ss, title_suffix=f"ShuffleSplit_TEST{name}", save=True)
     print("\n")
 
-    # 3. LEAVEONE OUT (LOO)
+    # # 3. LEAVEONE OUT (LOO)
     # print("--- Benchmark : Leave-One-Out (LOO) ---")
     # df_loo, preds_train_loo, y_train_loo, preds_test_loo, y_loo = run_loo(models, X, y)
     # print(df_loo.to_string())
@@ -48,46 +50,6 @@ def main():
     # plot_confusion_matrices(y_loo, preds_test_loo, title_suffix=f"LOO_TEST{name}", save=True)
 
 
-def optimize_gradient_boosting(X, y):
-    # 1. Définition du modèle de base
-    gb = GradientBoostingClassifier(random_state=42)
-    cv = 5
-    # 2. Définition de la grille d'hyperparamètres à tester
-    param_grid = {
-        'n_estimators': [50, 100, 200, 300],
-        'learning_rate': [0.005, 0.01, 0.05, 0.1, 0.2, 0.3],
-        'max_depth': [1, 2, 3, 4, 5],
-        'min_samples_split': [2, 5, 10, 15],
-        'subsample': [0.5, 0.8, 1.0],
-        'min_samples_leaf':[1,2,3]
-    }
-
-    # 3. Choix du score à optimiser
-    scoring_metric = 'accuracy'
-
-    print("Lancement de la recherche des hyperparamètres optimaux (GridSearchCV)...")
-
-    # 4. Configuration du GridSearch (ici en 5-fold cross-validation)
-    grid_search = GridSearchCV(
-        estimator=gb,
-        param_grid=param_grid,
-        scoring=scoring_metric,
-        cv=cv,
-        n_jobs=-1,
-        verbose=1
-    )
-
-    # 5. Exécution de la recherche
-    grid_search.fit(X, y)
-
-    # 6. Affichage des résultats
-    print("\n--- Résultats de l'optimisation ---")
-    print(f"Meilleur score ({scoring_metric}) : {grid_search.best_score_:.4f}")
-    print("Meilleurs hyperparamètres trouvés :")
-    for param, value in grid_search.best_params_.items():
-        print(f"  -> {param}: {value}")
-
-    return grid_search.best_estimator_
 
 
 def main_2():
@@ -97,9 +59,46 @@ def main_2():
 
     X, y = load_and_prepare_data(base_csv, personnes_csv, photos_csv)
 
-    # Lance l'optimisation
-    best_model = optimize_gradient_boosting(X, y)
+    # param_grid = {
+    #     'learning_rate': [0.01, 0.05, 0.06, 0.07, 0.1],
+    #     'max_depth': [2, 3, 4],
+    #     'min_samples_leaf': [7, 10, 20, 50],
+    #     'n_estimators': [100, 200, 300]
+    # }
+    param_grid = {
+        'learning_rate': [0.01, 0.05, 0.1, 0.2],
+        'n_estimators': [100, 200, 300, 500],
+        'max_depth': [2, 3, 4, 5],
+        'min_samples_split': [2, 5, 10],
+        'min_samples_leaf': [1, 5, 10, 20],
+        'subsample': [0.8, 0.9, 1.0]
+    }
 
+    # Lance l'optimisation
+    best_model, best_parameter = optimize_gradient_boosting(X, y, param_grid)
+    df_best_parameters = pd.DataFrame([best_parameter])
+    print(df_best_parameters.to_string())
+    df_best_parameters.to_csv(os.path.join(output_dir, f"results_GS_best_paramter_GB.csv"))
+    # Entraine le meilleur modéle
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    best_model.fit(X_train, y_train)
+    y_train_pred = best_model.predict(X_train)
+    y_test_pred = best_model.predict(X_test)
+
+    # Affichage résultats meilleur modéle
+    train_metrics = get_metrics(y_train, y_train_pred)
+    test_metrics = get_metrics(y_test, y_test_pred)
+
+    results = {}
+    results["best_model"] = {}
+    for k, v in train_metrics.items():
+        results["best_model"][f'Train {k}'] = v
+    for k, v in test_metrics.items():
+        results["best_model"][f'Test {k}'] = v
+
+    df_results = pd.DataFrame(results).T
+    df_results.to_csv(os.path.join(output_dir, f"results_GS.csv"))
+    print(df_results.to_string())
 
 if __name__ == "__main__":
-    main()
+    main_2()
