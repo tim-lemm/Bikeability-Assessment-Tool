@@ -14,7 +14,6 @@ photos_csv = "data/survey/data-photos.csv"
 
 def main():
 
-
     X, y = load_and_prepare_data(base_csv, personnes_csv, photos_csv)
     models = (get_models())
     name = ""
@@ -40,14 +39,14 @@ def main():
     plot_confusion_matrices(y_test_ss, preds_test_ss, title_suffix=f"ShuffleSplit_TEST{name}", save=True)
     print("\n")
 
-    # # 3. LEAVEONE OUT (LOO)
-    # print("--- Benchmark : Leave-One-Out (LOO) ---")
-    # df_loo, preds_train_loo, y_train_loo, preds_test_loo, y_loo = run_loo(models, X, y)
-    # print(df_loo.to_string())
-    # df_loo.to_csv(os.path.join(output_dir, f"results_loo{name}.csv"))
-    #
-    # plot_confusion_matrices(y_train_loo, preds_train_loo, title_suffix=f"LOO_TRAIN{name}", save=True)
-    # plot_confusion_matrices(y_loo, preds_test_loo, title_suffix=f"LOO_TEST{name}", save=True)
+    # 3. LEAVEONE OUT (LOO)
+    print("--- Benchmark : Leave-One-Out (LOO) ---")
+    df_loo, preds_train_loo, y_train_loo, preds_test_loo, y_loo = run_loo(models, X, y)
+    print(df_loo.to_string())
+    df_loo.to_csv(os.path.join(output_dir, f"results_loo{name}.csv"))
+
+    plot_confusion_matrices(y_train_loo, preds_train_loo, title_suffix=f"LOO_TRAIN{name}", save=True)
+    plot_confusion_matrices(y_loo, preds_test_loo, title_suffix=f"LOO_TEST{name}", save=True)
 
 
 

@@ -82,6 +82,7 @@ def run_train_test(models, X, y, test_size=0.2, random_state=42):
 
     return pd.DataFrame(results).T, dict_preds_train, y_train, dict_preds_test, y_test
 
+
 def run_shufflesplit(models, X, y, n_splits=5, test_size=0.2, random_state=42):
     cv = StratifiedShuffleSplit(n_splits=n_splits, test_size=test_size, random_state=random_state)
     results = {}
@@ -113,7 +114,19 @@ def run_shufflesplit(models, X, y, n_splits=5, test_size=0.2, random_state=42):
 
             all_train_preds.extend(train_pred)
             all_test_preds.extend(test_pred)
-            fold_metrics.append(get_metrics(y_test, test_pred))
+
+            # Calcul des metriques d'entrainement et de test pour le fold actuel
+            train_metrics = get_metrics(y_train, train_pred)
+            test_metrics = get_metrics(y_test, test_pred)
+
+            # Combinaison des metriques avec des prefixes clairs
+            combined_metrics = {}
+            for k, v in train_metrics.items():
+                combined_metrics[f'Train {k}'] = v
+            for k, v in test_metrics.items():
+                combined_metrics[f'Test {k}'] = v
+
+            fold_metrics.append(combined_metrics)
 
         df_folds = pd.DataFrame(fold_metrics)
         results[name] = df_folds.mean().to_dict()
@@ -171,7 +184,12 @@ def load_and_prepare_data(base_csv, personnes_csv, photos_csv):
 def get_models():
     return {
         "Classification Tree": DecisionTreeClassifier(random_state=42),
-        "Gradient Boost": GradientBoostingClassifier(random_state=42),
+        "Gradient Boost": GradientBoostingClassifier(random_state=42, learning_rate=0.2,
+                                                     max_depth=5,
+                                                     min_samples_split=2,
+                                                     min_samples_leaf=1,
+                                                     n_estimators=500,
+                                                     subsample=0.8),
         "HistGradient Boost": HistGradientBoostingClassifier(random_state=42),
         "Random Forest": RandomForestClassifier(random_state=42),
         "Ada Boost": AdaBoostClassifier(random_state=42)
