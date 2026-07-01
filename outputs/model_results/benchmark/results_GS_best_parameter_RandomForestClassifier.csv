@@ -1,0 +1,2 @@
+,bootstrap,criterion,max_depth,max_features,min_samples_leaf,min_samples_split,n_estimators,oob_score
+0,True,gini,,sqrt,1,2,100,<function accuracy_score at 0x16b7b7060>

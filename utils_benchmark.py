@@ -205,9 +205,8 @@ def get_models_gb():
         "Gradient Boost 5": GradientBoostingClassifier(random_state=42, max_depth=5)
     }
 
-def optimize_gradient_boosting(X, y, param_grid):
+def optimize_model_hp(X, y, base_model, param_grid):
     # 1. Définition du modèle de base
-    gb = GradientBoostingClassifier(random_state=42)
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
     # 2. Définition de la grille d'hyperparamètres à tester
 
@@ -218,7 +217,7 @@ def optimize_gradient_boosting(X, y, param_grid):
 
     # 4. Configuration du GridSearch (ici en 5-fold cross-validation)
     grid_search = GridSearchCV(
-        estimator=gb,
+        estimator=base_model,
         param_grid=param_grid,
         scoring=scoring_metric,
         cv=cv,
@@ -237,11 +236,11 @@ def optimize_gradient_boosting(X, y, param_grid):
 
     # --- Affichage des meilleurs résultats ---
     print("\n--- Résultats de l'optimisation ---")
-    print(f"Meilleur score ({scoring_metric}) : {grid_search.best_score_:.4f}")
+    print(f"Meilleur score ({scoring_metric}) : {grid_search.best_score_}")
     print("Meilleurs hyperparamètres trouvés :", grid_search.best_params_)
 
     best_index = grid_search.best_index_
-    print(f"\nScore Train du meilleur modèle : {results_df.loc[best_index, 'mean_train_score']:.4f}")
-    print(f"Score Test du meilleur modèle  : {results_df.loc[best_index, 'mean_test_score']:.4f}")
+    print(f"\nScore Train du meilleur modèle : {results_df.loc[best_index, 'mean_train_score']}")
+    print(f"Score Test du meilleur modèle  : {results_df.loc[best_index, 'mean_test_score']}")
 
     return grid_search.best_estimator_, grid_search.best_params_

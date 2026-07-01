@@ -1,8 +1,8 @@
 from sklearn.metrics import accuracy_score, balanced_accuracy_score
-from utils_benchmark import run_train_test, run_shufflesplit, run_loo, load_and_prepare_data, get_models, get_models_gb, plot_confusion_matrices, get_metrics, optimize_gradient_boosting
+from utils_benchmark import run_train_test, run_shufflesplit, run_loo, load_and_prepare_data, get_models, get_models_gb, plot_confusion_matrices, get_metrics, optimize_model_hp
 import pandas as pd
 import os
-from sklearn.ensemble import GradientBoostingClassifier, HistGradientBoostingClassifier
+from sklearn.ensemble import GradientBoostingClassifier, HistGradientBoostingClassifier, RandomForestClassifier
 from sklearn.model_selection import GridSearchCV, train_test_split, StratifiedKFold
 
 random_state=42
@@ -64,20 +64,40 @@ def main_2():
     #     'min_samples_leaf': [7, 10, 20, 50],
     #     'n_estimators': [100, 200, 300]
     # }
+    # param_grid = {
+    #     'learning_rate': [0.01, 0.05, 0.1, 0.2],
+    #     'n_estimators': [100, 200, 300, 500],
+    #     'max_depth': [2, 3, 4, 5],
+    #     'min_samples_split': [2, 5, 10],
+    #     'min_samples_leaf': [1, 5, 10, 20],
+    #     'subsample': [0.8, 0.9, 1.0]
+    # }
+    # param_grid = {
+    #     'learning_rate': [0.1, 0.2, 0.3],
+    #     'max_iter':[20,50,100,200,300],
+    #     'max_leaf_nodes':[None, 30, 40],
+    #     'max_depth':[None, 5, 10],
+    #     'min_samples_leaf':[1, 2, 3, 4, 20],
+    #     'max_features':[1,0.99,0.98,0.95]
+    # }
     param_grid = {
-        'learning_rate': [0.01, 0.05, 0.1, 0.2],
-        'n_estimators': [100, 200, 300, 500],
-        'max_depth': [2, 3, 4, 5],
-        'min_samples_split': [2, 5, 10],
-        'min_samples_leaf': [1, 5, 10, 20],
-        'subsample': [0.8, 0.9, 1.0]
-    }
+        'criterion' : ['gini', 'entropy', 'log_loss'],
+        'n_estimators' : [50, 100, 150, 200],
+        'max_depth':[None, 1,3,5],
+        'max_features':['sqrt', 'log2', None],
+        'min_samples_leaf':[1, 2, 3, 10, 25],
+        'min_samples_split':[2,3,4],
+        'bootstrap':[True],
+        'oob_score':[accuracy_score, balanced_accuracy_score],
+                  }
 
+    model = RandomForestClassifier(random_state=42)
+    model_name = "RandomForestClassifier"
     # Lance l'optimisation
-    best_model, best_parameter = optimize_gradient_boosting(X, y, param_grid)
+    best_model, best_parameter = optimize_model_hp(X, y, model, param_grid)
     df_best_parameters = pd.DataFrame([best_parameter])
     print(df_best_parameters.to_string())
-    df_best_parameters.to_csv(os.path.join(output_dir, f"results_GS_best_paramter_GB.csv"))
+    df_best_parameters.to_csv(os.path.join(output_dir, f"results_GS_best_parameter_{model_name}.csv"))
     # Entraine le meilleur modéle
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     best_model.fit(X_train, y_train)
@@ -96,7 +116,7 @@ def main_2():
         results["best_model"][f'Test {k}'] = v
 
     df_results = pd.DataFrame(results).T
-    df_results.to_csv(os.path.join(output_dir, f"results_GS.csv"))
+    df_results.to_csv(os.path.join(output_dir, f"results_GS_{model_name}.csv"))
     print(df_results.to_string())
 
 if __name__ == "__main__":
