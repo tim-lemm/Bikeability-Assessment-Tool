@@ -5,13 +5,14 @@ import seaborn as sns
 import numpy as np
 
 from sklearn.model_selection import train_test_split, ShuffleSplit, LeaveOneOut, cross_val_predict, StratifiedKFold, StratifiedShuffleSplit, GridSearchCV
-from sklearn.metrics import accuracy_score, mean_absolute_error, precision_score, confusion_matrix, balanced_accuracy_score
+from sklearn.metrics import accuracy_score, mean_absolute_error, precision_score, confusion_matrix, balanced_accuracy_score, recall_score, f1_score, cohen_kappa_score
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import (
     GradientBoostingClassifier,
     HistGradientBoostingClassifier,
     RandomForestClassifier,
-    AdaBoostClassifier
+    AdaBoostClassifier,
+    ExtraTreesClassifier
 )
 
 from utils_MCLR import load_and_preprocess_data
@@ -45,7 +46,11 @@ def get_metrics(y_true, y_pred):
     metrics = {
         'Accuracy': accuracy_score(y_true, y_pred),
         'Balanced Accuracy': balanced_accuracy_score(y_true, y_pred),
-        'MAE': mean_absolute_error(y_true, y_pred)
+        'MAE': mean_absolute_error(y_true, y_pred),
+        'Precision': precision_score(y_true, y_pred, average='weighted', zero_division=0),
+        'Recall': recall_score(y_true, y_pred, average='weighted'),
+        'F1': f1_score(y_true, y_pred, average='weighted'),
+        'Cohen Kappa': cohen_kappa_score(y_true, y_pred)
     }
     precision = precision_score(y_true, y_pred, average=None, labels=[1, 2, 3, 4, 5], zero_division=0)
     for i, p in enumerate(precision, start=1):
@@ -192,7 +197,8 @@ def get_models():
                                                      subsample=0.8),
         "HistGradient Boost": HistGradientBoostingClassifier(random_state=42),
         "Random Forest": RandomForestClassifier(random_state=42),
-        "Ada Boost": AdaBoostClassifier(random_state=42)
+        "Ada Boost": AdaBoostClassifier(random_state=42),
+        "ExtraTrees": ExtraTreesClassifier(random_state=42)
     }
 
 def get_models_gb():
@@ -205,13 +211,10 @@ def get_models_gb():
         "Gradient Boost 5": GradientBoostingClassifier(random_state=42, max_depth=5)
     }
 
-def optimize_model_hp(X, y, base_model, param_grid):
+def optimize_model_hp(X, y, base_model, param_grid, scoring_metric="balanced_accuracy"):
     # 1. Définition du modèle de base
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
     # 2. Définition de la grille d'hyperparamètres à tester
-
-    # 3. Choix du score à optimiser
-    scoring_metric = 'balanced_accuracy'
 
     print("Lancement de la recherche des hyperparamètres optimaux (GridSearchCV)...")
 

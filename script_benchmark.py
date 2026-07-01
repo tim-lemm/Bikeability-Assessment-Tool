@@ -5,8 +5,8 @@ import os
 from sklearn.ensemble import GradientBoostingClassifier, HistGradientBoostingClassifier, RandomForestClassifier
 from sklearn.model_selection import GridSearchCV, train_test_split, StratifiedKFold
 
-random_state=42
-n_splits=5
+random_state=74
+n_splits=100
 output_dir = "outputs/model_results/benchmark"
 base_csv = "data/survey/data-base.csv"
 personnes_csv = "data/survey/data-personnes.csv"
@@ -39,14 +39,14 @@ def main():
     plot_confusion_matrices(y_test_ss, preds_test_ss, title_suffix=f"ShuffleSplit_TEST{name}", save=True)
     print("\n")
 
-    # 3. LEAVEONE OUT (LOO)
-    print("--- Benchmark : Leave-One-Out (LOO) ---")
-    df_loo, preds_train_loo, y_train_loo, preds_test_loo, y_loo = run_loo(models, X, y)
-    print(df_loo.to_string())
-    df_loo.to_csv(os.path.join(output_dir, f"results_loo{name}.csv"))
-
-    plot_confusion_matrices(y_train_loo, preds_train_loo, title_suffix=f"LOO_TRAIN{name}", save=True)
-    plot_confusion_matrices(y_loo, preds_test_loo, title_suffix=f"LOO_TEST{name}", save=True)
+    # # 3. LEAVEONE OUT (LOO)
+    # print("--- Benchmark : Leave-One-Out (LOO) ---")
+    # df_loo, preds_train_loo, y_train_loo, preds_test_loo, y_loo = run_loo(models, X, y)
+    # print(df_loo.to_string())
+    # df_loo.to_csv(os.path.join(output_dir, f"results_loo{name}.csv"))
+    #
+    # plot_confusion_matrices(y_train_loo, preds_train_loo, title_suffix=f"LOO_TRAIN{name}", save=True)
+    # plot_confusion_matrices(y_loo, preds_test_loo, title_suffix=f"LOO_TEST{name}", save=True)
 
 
 
@@ -94,7 +94,7 @@ def main_2():
     model = RandomForestClassifier(random_state=42)
     model_name = "RandomForestClassifier"
     # Lance l'optimisation
-    best_model, best_parameter = optimize_model_hp(X, y, model, param_grid)
+    best_model, best_parameter = optimize_model_hp(X, y, model, param_grid, scoring_metric="precision_weighted")
     df_best_parameters = pd.DataFrame([best_parameter])
     print(df_best_parameters.to_string())
     df_best_parameters.to_csv(os.path.join(output_dir, f"results_GS_best_parameter_{model_name}.csv"))
@@ -120,4 +120,4 @@ def main_2():
     print(df_results.to_string())
 
 if __name__ == "__main__":
-    main_2()
+    main()
