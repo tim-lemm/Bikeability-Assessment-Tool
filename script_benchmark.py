@@ -1,5 +1,5 @@
 from sklearn.metrics import accuracy_score, balanced_accuracy_score
-from utils_benchmark import run_train_test, run_shufflesplit, run_loo, load_and_prepare_data, get_models, get_models_gb, plot_confusion_matrices, get_metrics, optimize_model_hp
+from utils_benchmark import run_train_test, run_shufflesplit, run_loo, load_and_prepare_data, get_models, get_models_gb, plot_confusion_matrices, get_metrics, optimize_model_hp, plot_predictions_distribution
 import pandas as pd
 import os
 from sklearn.ensemble import GradientBoostingClassifier, HistGradientBoostingClassifier, RandomForestClassifier
@@ -27,6 +27,8 @@ def main():
 
     plot_confusion_matrices(y_train_tt, preds_train_tt, title_suffix=f"TrainTest_TRAIN{name}", save=True)
     plot_confusion_matrices(y_test_tt, preds_test_tt, title_suffix=f"TrainTest_TEST{name}", save=True)
+    plot_predictions_distribution(y_train_tt, preds_train_tt, title_suffix=f"TrainTest_TRAIN{name}", save=True)
+    plot_predictions_distribution(y_test_tt, preds_test_tt, title_suffix=f"TrainTest_TEST{name}", save=True)
     print("\n")
 
     # 2. SHUFFLE SPLIT
@@ -37,6 +39,8 @@ def main():
 
     plot_confusion_matrices(y_train_ss, preds_train_ss, title_suffix=f"ShuffleSplit_TRAIN{name}", save=True)
     plot_confusion_matrices(y_test_ss, preds_test_ss, title_suffix=f"ShuffleSplit_TEST{name}", save=True)
+    plot_predictions_distribution(y_train_ss, preds_train_ss, title_suffix=f"ShuffleSplit_TRAIN{name}", save=True)
+    plot_predictions_distribution(y_test_ss, preds_test_ss, title_suffix=f"ShuffleSplit_TEST{name}", save=True)
     print("\n")
 
     # # 3. LEAVEONE OUT (LOO)
@@ -51,7 +55,7 @@ def main():
 
 
 
-def main_2():
+def opti():
     base_csv = "data/survey/data-base.csv"
     personnes_csv = "data/survey/data-personnes.csv"
     photos_csv = "data/survey/data-photos.csv"

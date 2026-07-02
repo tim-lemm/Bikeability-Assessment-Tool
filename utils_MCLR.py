@@ -4,7 +4,7 @@ import pymc as pm
 import pymc.distributions.transforms as tr
 import arviz as az
 from matplotlib import pyplot as plt
-from sklearn.preprocessing import OrdinalEncoder, StandardScaler
+from sklearn.preprocessing import OrdinalEncoder, StandardScaler, OneHotEncoder
 from sklearn.model_selection import ShuffleSplit
 from sklearn.metrics import confusion_matrix, classification_report, accuracy_score, f1_score, mean_absolute_error
 import seaborn as sns
@@ -37,33 +37,56 @@ def load_and_preprocess_data(base_path, personnes_path, photos_path):
     """
     df = import_and_merge_data_base(base_path, personnes_path, photos_path)
     cat_cols = ['id_personne', 'id_photo', 'age', 'gender', 'job', 'electric_bike', 'speed', 'slope', 'green', 'type',
-                'bike_use_frequency','bike_ownership']
+                'bike_use_frequency','bike_ownership', 'nbr_lane']
     # Encoding categorical features
-    encoder_cat = OrdinalEncoder(dtype=np.int64)
-    df[[f"{col}_idx" for col in cat_cols]] = encoder_cat.fit_transform(df[cat_cols])
+    encoder_cat = OneHotEncoder(dtype=np.int64)
+    enc_output = encoder_cat.fit_transform(df[cat_cols]).toarray()
 
-    # Encoding numerical features
-    num_cols = ['nbr_lane']
-    scaler_num = StandardScaler()
-    df[[f"{col}_scaled" for col in num_cols]] = scaler_num.fit_transform(df[num_cols])
+    encoded_cols = encoder_cat.get_feature_names_out(cat_cols)
+    df_enc = pd.DataFrame(enc_output, columns=encoded_cols, index=df.index)
+
+    # df[[f"{col}_idx" for col in cat_cols]] = encoder_cat.fit_transform(df[cat_cols])
+
+    # # Encoding numerical features
+    # num_cols = ['nbr_lane']
+    # scaler_num = StandardScaler()
+    # df[[f"{col}_scaled" for col in num_cols]] = scaler_num.fit_transform(df[num_cols])
 
     # Map target scale from 1-5 to 0-4
-    df['note_idx'] = df['note'] - 1
+    df_enc['note'] = df['note']
 
     # Extract dimension sizes
+    # dims = {
+    #     "n_personne": df['id_personne_idx'].nunique(),
+    #     "n_genders": df['gender_idx'].nunique(),
+    #     "n_bike_use_frequency": df['bike_use_frequency_idx'].nunique(),
+    #     "n_ages": df['age_idx'].nunique(),
+    #     "n_jobs": df['job_idx'].nunique(),
+    #     "n_bike_ownership": df['bike_ownership_idx'].nunique(),
+    #     "n_electric_bikes": df['electric_bike_idx'].nunique(),
+    #     "n_photos": df['id_photo_idx'].nunique(),
+    #     "n_types": df['type_idx'].nunique(),
+    #     "n_speeds": df['speed_idx'].nunique(),
+    #     "n_slopes": df['slope_idx'].nunique(),
+    #     "n_greens": df['green_idx'].nunique(),
+    #     "n_notes": 5
+    # }
+
+    cat_counts = {col: len(cats) for col, cats in zip(cat_cols, encoder_cat.categories_)}
+
     dims = {
-        "n_personne": df['id_personne_idx'].nunique(),
-        "n_genders": df['gender_idx'].nunique(),
-        "n_bike_use_frequency": df['bike_use_frequency_idx'].nunique(),
-        "n_ages": df['age_idx'].nunique(),
-        "n_jobs": df['job_idx'].nunique(),
-        "n_bike_ownership": df['bike_ownership_idx'].nunique(),
-        "n_electric_bikes": df['electric_bike_idx'].nunique(),
-        "n_photos": df['id_photo_idx'].nunique(),
-        "n_types": df['type_idx'].nunique(),
-        "n_speeds": df['speed_idx'].nunique(),
-        "n_slopes": df['slope_idx'].nunique(),
-        "n_greens": df['green_idx'].nunique(),
+        "n_personne": cat_counts["id_personne"],
+        "n_genders": cat_counts["gender"],
+        "n_bike_use_frequency": cat_counts["bike_use_frequency"],
+        "n_ages": cat_counts["age"],
+        "n_jobs": cat_counts["job"],
+        "n_bike_ownership": cat_counts["bike_ownership"],
+        "n_electric_bikes": cat_counts["electric_bike"],
+        "n_photos": cat_counts["id_photo"],
+        "n_types": cat_counts["type"],
+        "n_speeds": cat_counts["speed"],
+        "n_slopes": cat_counts["slope"],
+        "n_greens": cat_counts["green"],
         "n_notes": 5
     }
 
@@ -72,7 +95,7 @@ def load_and_preprocess_data(base_path, personnes_path, photos_path):
         "categories_gender": list(encoder_cat.categories_[3])
     }
 
-    return df, dims, coords
+    return df_enc, dims, coords
 
 
 def build_model_1(df, dims, coords):

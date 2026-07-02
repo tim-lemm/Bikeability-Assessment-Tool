@@ -6,6 +6,7 @@ import numpy as np
 
 from sklearn.model_selection import train_test_split, ShuffleSplit, LeaveOneOut, cross_val_predict, StratifiedKFold, StratifiedShuffleSplit, GridSearchCV
 from sklearn.metrics import accuracy_score, mean_absolute_error, precision_score, confusion_matrix, balanced_accuracy_score, recall_score, f1_score, cohen_kappa_score
+from sklearn.preprocessing import OneHotEncoder
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import (
     GradientBoostingClassifier,
@@ -17,6 +18,60 @@ from sklearn.ensemble import (
 
 from utils_MCLR import load_and_preprocess_data
 
+def plot_predictions_distribution(y_true, dict_preds, title_suffix="", save=False):
+    # 1. On prépare une liste pour stocker les données de chaque modèle
+    data_list = []
+
+    # On ajoute d'abord les valeurs réelles comme référence
+    for note in y_true:
+        data_list.append({'Source': 'Valeurs Réelles', 'Note': note})
+
+    # On ajoute ensuite les prédictions de chaque modèle
+    for name, y_pred in dict_preds.items():
+        for note in y_pred:
+            data_list.append({'Source': name, 'Note': note})
+
+    # On transforme le tout en un grand DataFrame
+    df_all = pd.DataFrame(data_list)
+
+    # 2. Création de la figure (un seul graphique, donc plus besoin de nrows/ncols)
+    fig, ax = plt.subplots(figsize=(12, 6))
+    labels = [1, 2, 3, 4, 5]
+
+    # Palette de couleurs : une couleur distincte par modèle + une pour le Réel
+    # 'Deep' est une palette très lisible, mais vous pouvez changer
+    palette = sns.color_palette("deep", n_colors=len(dict_preds) + 1)
+
+    # 3. Tracé du diagramme en barres unique
+    sns.countplot(
+        data=df_all,
+        x='Note',
+        hue='Source',
+        order=labels,
+        palette=palette,
+        ax=ax
+    )
+
+    # 4. Personnalisation du graphique
+    ax.set_title(f"Comparaison de la Distribution des Notes - {title_suffix}", fontsize=14, fontweight='bold', pad=15)
+    ax.set_ylabel("Nombre de valeurs (Comptage)", fontsize=11)
+    ax.set_xlabel("Notes", fontsize=11)
+
+    # Positionnement de la légende à l'extérieur pour ne pas cacher les barres
+    ax.legend(title="Modèles / Réel", bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0)
+
+    # Optionnel : Afficher les chiffres au-dessus des barres
+    # Attention, s'il y a beaucoup de modèles, enlever ces lignes pour éviter de surcharger le graphique
+    for container in ax.containers:
+        ax.bar_label(container, fmt='%d', padding=3, fontsize=8, rotation=0)
+
+    plt.tight_layout()
+
+    if save:
+        os.makedirs("outputs/model_results/benchmark/plots/", exist_ok=True)
+        plt.savefig(f"outputs/model_results/benchmark/plots/single_bar_dist_{title_suffix}.png", bbox_inches='tight')
+    else:
+        plt.show()
 
 def plot_confusion_matrices(y_true, dict_preds, title_suffix="", save=False, nrows=2, ncols=3):
     fig, axes = plt.subplots(nrows, ncols, figsize=(ncols*6, nrows*5.5))
@@ -37,8 +92,8 @@ def plot_confusion_matrices(y_true, dict_preds, title_suffix="", save=False, nro
     plt.tight_layout()
 
     if save:
-        os.makedirs("outputs/model_results/benchmark", exist_ok=True)
-        plt.savefig(f"outputs/model_results/benchmark/confusion_matrix_{title_suffix}.png")
+        os.makedirs("outputs/model_results/benchmark/plots/", exist_ok=True)
+        plt.savefig(f"outputs/model_results/benchmark/plots/confusion_matrix_{title_suffix}.png")
     else:
         plt.show()
 
@@ -177,11 +232,12 @@ def run_loo(models, X, y):
 
 def load_and_prepare_data(base_csv, personnes_csv, photos_csv):
     df, _, _ = load_and_preprocess_data(base_csv, personnes_csv, photos_csv)
-    liste_cat = ["nbr_lane", "speed", "slope", "type", "green"]
-    X = df[liste_cat].copy()
+    # print(df.head().to_string())
 
-    # Encodage en variables numériques lues par tous les modèles
-    X = pd.get_dummies(X, columns=liste_cat, drop_first=True)
+    liste_individual_features = [f"age_{i}"for i in range(6)] + ["gender_0", "gender_1", "gender_3"] + ["job_2","job_4","job_6"] + ["electric_bike_False", "electric_bike_True"] + [f"bike_use_frequency_{i}" for i in range(5)] + ["bike_ownership_0","bike_ownership_1"]
+    liste_cat = [f"nbr_lane_{i}" for i in range(4)] + [f"speed_{i}"for i in range(4)] + [f"slope_{i}" for i in range(3)] + [f"green_{i}" for i in range(3)] + [f"type_{i}" for i in range(4)]
+
+    X = df[liste_cat].copy()
 
     y = df["note"].astype(int)
     return X, y
