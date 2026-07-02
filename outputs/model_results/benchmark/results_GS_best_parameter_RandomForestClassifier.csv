@@ -1,2 +1,0 @@
-,bootstrap,criterion,max_depth,max_features,min_samples_leaf,min_samples_split,n_estimators,oob_score
-0,True,entropy,5,,1,2,150,<function accuracy_score at 0x173343060>
