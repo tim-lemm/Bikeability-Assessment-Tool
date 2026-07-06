@@ -36,7 +36,7 @@ def plot_predictions_distribution(y_true, dict_preds, title_suffix="", save=Fals
 
     # 2. Création de la figure (un seul graphique, donc plus besoin de nrows/ncols)
     fig, ax = plt.subplots(figsize=(12, 6))
-    labels = [1, 2, 3, 4, 5]
+    labels = [0, 1, 2, 3, 4]
 
     # Palette de couleurs : une couleur distincte par modèle + une pour le Réel
     # 'Deep' est une palette très lisible, mais vous pouvez changer
@@ -78,7 +78,7 @@ def plot_confusion_matrices(y_true, dict_preds, title_suffix="", save=False, nro
     if nrows != 1 and ncols != 1:
         axes = axes.ravel()
 
-    labels = [1, 2, 3, 4, 5]
+    labels = [0, 1, 2, 3, 4]
 
     for idx, (name, y_pred) in enumerate(dict_preds.items()):
         cm = confusion_matrix(y_true, y_pred, labels=labels)
@@ -107,8 +107,8 @@ def get_metrics(y_true, y_pred):
         'F1': f1_score(y_true, y_pred, average='weighted'),
         'Cohen Kappa': cohen_kappa_score(y_true, y_pred)
     }
-    precision = precision_score(y_true, y_pred, average=None, labels=[1, 2, 3, 4, 5], zero_division=0)
-    for i, p in enumerate(precision, start=1):
+    precision = precision_score(y_true, y_pred, average=None, labels=[0, 1, 2, 3, 4], zero_division=0)
+    for i, p in enumerate(precision, start=0):
         metrics[f'Precision_Class_{i}'] = p
     return metrics
 
@@ -231,7 +231,7 @@ def run_loo(models, X, y):
     return pd.DataFrame(results).T, dict_preds_train, y_train_concat, dict_preds_test, y
 
 def load_and_prepare_data(base_csv, personnes_csv, photos_csv):
-    df, _, _ = load_and_preprocess_data(base_csv, personnes_csv, photos_csv)
+    df, _, _, _ = load_and_preprocess_data(base_csv, personnes_csv, photos_csv, drop = None)
     # print(df.head().to_string())
 
     liste_individual_features = [f"age_{i}"for i in range(6)] + ["gender_0", "gender_1", "gender_3"] + ["job_2","job_4","job_6"] + ["electric_bike_False", "electric_bike_True"] + [f"bike_use_frequency_{i}" for i in range(5)] + ["bike_ownership_0","bike_ownership_1"]

@@ -25,23 +25,23 @@ def main():
     print(df_tt.to_string())
     df_tt.to_csv(os.path.join(output_dir, f"results_train_test{name}.csv"))
 
-    plot_confusion_matrices(y_train_tt, preds_train_tt, title_suffix=f"TrainTest_TRAIN{name}", save=True)
-    plot_confusion_matrices(y_test_tt, preds_test_tt, title_suffix=f"TrainTest_TEST{name}", save=True)
-    plot_predictions_distribution(y_train_tt, preds_train_tt, title_suffix=f"TrainTest_TRAIN{name}", save=True)
-    plot_predictions_distribution(y_test_tt, preds_test_tt, title_suffix=f"TrainTest_TEST{name}", save=True)
+    plot_confusion_matrices(y_train_tt, preds_train_tt, title_suffix=f"TrainTest_TRAIN{name}", save=False)
+    plot_confusion_matrices(y_test_tt, preds_test_tt, title_suffix=f"TrainTest_TEST{name}", save=False)
+    plot_predictions_distribution(y_train_tt, preds_train_tt, title_suffix=f"TrainTest_TRAIN{name}", save=False)
+    plot_predictions_distribution(y_test_tt, preds_test_tt, title_suffix=f"TrainTest_TEST{name}", save=False)
     print("\n")
 
-    # 2. SHUFFLE SPLIT
-    print(f"--- Benchmark : ShuffleSplit ({n_splits}-fold) ---")
-    df_ss, preds_train_ss, y_train_ss, preds_test_ss, y_test_ss = run_shufflesplit(models, X, y, n_splits=n_splits, random_state=random_state)
-    print(df_ss.to_string())
-    df_ss.to_csv(os.path.join(output_dir, f"results_shufflesplit{name}.csv"))
-
-    plot_confusion_matrices(y_train_ss, preds_train_ss, title_suffix=f"ShuffleSplit_TRAIN{name}", save=True)
-    plot_confusion_matrices(y_test_ss, preds_test_ss, title_suffix=f"ShuffleSplit_TEST{name}", save=True)
-    plot_predictions_distribution(y_train_ss, preds_train_ss, title_suffix=f"ShuffleSplit_TRAIN{name}", save=True)
-    plot_predictions_distribution(y_test_ss, preds_test_ss, title_suffix=f"ShuffleSplit_TEST{name}", save=True)
-    print("\n")
+    # # 2. SHUFFLE SPLIT
+    # print(f"--- Benchmark : ShuffleSplit ({n_splits}-fold) ---")
+    # df_ss, preds_train_ss, y_train_ss, preds_test_ss, y_test_ss = run_shufflesplit(models, X, y, n_splits=n_splits, random_state=random_state)
+    # print(df_ss.to_string())
+    # df_ss.to_csv(os.path.join(output_dir, f"results_shufflesplit{name}.csv"))
+    #
+    # plot_confusion_matrices(y_train_ss, preds_train_ss, title_suffix=f"ShuffleSplit_TRAIN{name}", save=True)
+    # plot_confusion_matrices(y_test_ss, preds_test_ss, title_suffix=f"ShuffleSplit_TEST{name}", save=True)
+    # plot_predictions_distribution(y_train_ss, preds_train_ss, title_suffix=f"ShuffleSplit_TRAIN{name}", save=True)
+    # plot_predictions_distribution(y_test_ss, preds_test_ss, title_suffix=f"ShuffleSplit_TEST{name}", save=True)
+    # print("\n")
 
     # # 3. LEAVEONE OUT (LOO)
     # print("--- Benchmark : Leave-One-Out (LOO) ---")
