@@ -1,12 +1,6 @@
-import pandas as pd
-import matplotlib.pyplot as plt
 import os
-import seaborn as sns
-import numpy as np
-
-from sklearn.model_selection import train_test_split, ShuffleSplit, LeaveOneOut, cross_val_predict, StratifiedKFold, StratifiedShuffleSplit, GridSearchCV
+from sklearn.model_selection import train_test_split, LeaveOneOut, StratifiedKFold, StratifiedShuffleSplit, GridSearchCV
 from sklearn.metrics import accuracy_score, mean_absolute_error, precision_score, confusion_matrix, balanced_accuracy_score, recall_score, f1_score, cohen_kappa_score
-from sklearn.preprocessing import OneHotEncoder
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import (
     GradientBoostingClassifier,
@@ -15,8 +9,8 @@ from sklearn.ensemble import (
     AdaBoostClassifier,
     ExtraTreesClassifier
 )
-
-from utils_MCLR import load_and_preprocess_data
+from utils_MCLR import *
+from scipy.stats import mode
 
 def plot_predictions_distribution(y_true, dict_preds, title_suffix="", save=False):
     # 1. On prépare une liste pour stocker les données de chaque modèle
@@ -97,7 +91,7 @@ def plot_confusion_matrices(y_true, dict_preds, title_suffix="", save=False, nro
     else:
         plt.show()
 
-def get_metrics(y_true, y_pred):
+def get_metrics_ML(y_true, y_pred):
     metrics = {
         'Accuracy': accuracy_score(y_true, y_pred),
         'Balanced Accuracy': balanced_accuracy_score(y_true, y_pred),
@@ -112,12 +106,54 @@ def get_metrics(y_true, y_pred):
         metrics[f'Precision_Class_{i}'] = p
     return metrics
 
+def get_metrics_MCLR(y_true, idata):
+    var_name = "y_obs"
+
+    y_pred_samples = idata.posterior_predictive[var_name].values
+    y_pred_samples = y_pred_samples.reshape(-1, y_pred_samples.shape[-1]).T
+
+    num_samples = y_pred_samples.shape[1]
+
+    acc_list, bal_acc_list, mae_list, prec_list, rec_list, f1_list, kappa_list = [], [], [], [], [], [], []
+    num_class = 5
+    prec_class_lists = {i:[] for i in range(num_class)}
+
+    for j in range(num_samples):
+        yp = y_pred_samples[:, j]
+
+        acc_list.append(accuracy_score(yp, y_true))
+        bal_acc_list.append(balanced_accuracy_score(yp, y_true))
+        mae_list.append(mean_absolute_error(yp, y_true))
+        prec_list.append(precision_score(yp, y_true, average='weighted', zero_division=0))
+        rec_list.append(recall_score(yp, y_true, average='weighted', zero_division=0))
+        f1_list.append(f1_score(yp, y_true, average='weighted', zero_division=0))
+        kappa_list.append(cohen_kappa_score(yp, y_true))
+
+        p_class = precision_score(yp, y_true, average=None, labels=list(range(num_class)), zero_division=0)
+        for i, p in enumerate(p_class):
+            prec_class_lists[i].append(p)
+
+    metrics = {
+        "Accuracy": np.mean(acc_list),
+        "Balanced Accuracy": np.mean(bal_acc_list),
+        "MAE": np.mean(mae_list),
+        "Precision": np.mean(prec_list),
+        "Recall": np.mean(rec_list),
+        "F1": np.mean(f1_list),
+        "Cohen Kappa": np.mean(kappa_list)
+    }
+
+    for i in range(num_class):
+        metrics[f'Precision_Class_{i}'] = np.mean(prec_list[i])
+
+    return metrics
+
 def _split_data(X, y, train_idx, test_idx):
     if hasattr(X, "iloc"):
         return X.iloc[train_idx], X.iloc[test_idx], y.iloc[train_idx], y.iloc[test_idx]
     return X[train_idx], X[test_idx], y[train_idx], y[test_idx]
 
-def run_train_test(models, X, y, test_size=0.2, random_state=42):
+def run_train_test_ML(models, X, y, test_size=0.2, random_state=42):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
     results = {}
     dict_preds_train = {}
@@ -131,8 +167,8 @@ def run_train_test(models, X, y, test_size=0.2, random_state=42):
         dict_preds_train[name] = train_pred
         dict_preds_test[name] = test_pred
 
-        train_metrics = get_metrics(y_train, train_pred)
-        test_metrics = get_metrics(y_test, test_pred)
+        train_metrics = get_metrics_ML(y_train, train_pred)
+        test_metrics = get_metrics_ML(y_test, test_pred)
 
         results[name] = {}
         for k, v in train_metrics.items():
@@ -142,6 +178,89 @@ def run_train_test(models, X, y, test_size=0.2, random_state=42):
 
     return pd.DataFrame(results).T, dict_preds_train, y_train, dict_preds_test, y_test
 
+def run_train_test_MCLR(df, dims, test_size=0.2, random_state=42):
+    X, y = df.iloc[:, :-1], df.iloc[:, -1]
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size,random_state=random_state)
+    df_train = pd.concat([X_train, y_train], axis=1)
+    df_test = pd.concat([X_test, y_test], axis=1)
+    results = {}
+    train_predictions_for_plots = {}
+    test_predictions_for_plots = {}
+
+    X_age_test = df_test[[col for col in df_test.columns if col.startswith('age_')]].values
+    X_gender_test = df_test[[col for col in df_test.columns if col.startswith('gender_')]].values
+    X_job_test = df_test[[col for col in df_test.columns if col.startswith('job_')]].values
+    X_electric_bike_test = df_test[[col for col in df_test.columns if col.startswith('electric_bike_')]].values
+    X_bike_use_frequency_test = df_test[
+        [col for col in df_test.columns if col.startswith('bike_use_frequency_')]].values
+    X_bike_ownership_test = df_test[[col for col in df_test.columns if col.startswith('bike_ownership_')]].values
+
+    X_nbr_lanes_test = df_test[[col for col in df_test.columns if col.startswith('nbr_lane_')]].values
+    X_type_test = df_test[[col for col in df_test.columns if col.startswith('type_')]].values
+    X_slope_test = df_test[[col for col in df_test.columns if col.startswith('slope_')]].values
+    X_speed_test = df_test[[col for col in df_test.columns if col.startswith('speed_')]].values
+    X_green_test = df_test[[col for col in df_test.columns if col.startswith('green_')]].values
+
+    id_personne_test = df_test['id_personne'].values
+    id_photo_test = df_test['id_photo'].values
+
+    models = get_models_MCLR(df_train, dims)
+    for name, model in models.items():
+        model_actif = models[name][0]
+        # print("Conteneurs de données enregistrés :", [v.name for v in model_actif.data_vars])
+        with model_actif:
+            trace = pm.sample(draws=1000, tune=1000, return_inferencedata=True)
+            idata_train = pm.sample_posterior_predictive(trace)
+            if name == "MCLR Model 1":
+                pm.set_data({
+                    "X_age": X_age_test,
+                    "X_gender": X_gender_test,
+                    "X_job": X_job_test,
+                    "X_electric_bike": X_electric_bike_test,
+                    "X_bike_use_frequency": X_bike_use_frequency_test,
+                    "X_bike_ownership": X_bike_ownership_test,
+                    "X_nbr_lanes": X_nbr_lanes_test,
+                    "X_type": X_type_test,
+                    "X_slope": X_slope_test,
+                    "X_speed": X_speed_test,
+                    "X_green": X_green_test,
+                    "id_personne": id_personne_test,
+                    "id_photo": id_photo_test,
+                    "y_obs_data":y_test
+                })
+            else :
+                pm.set_data({
+                    "X_nbr_lanes": X_nbr_lanes_test,
+                    "X_type": X_type_test,
+                    "X_slope": X_slope_test,
+                    "X_speed": X_speed_test,
+                    "X_green": X_green_test,
+                    "id_photo": id_photo_test,
+                    "y_obs_data": y_test
+                })
+            idata_test = pm.sample_posterior_predictive(trace)
+
+        train_metrics = get_metrics_MCLR(y_train, idata_train)
+        test_metrics = get_metrics_MCLR(y_test, idata_test)
+
+        results[name] = {}
+        for k, v in train_metrics.items():
+            results[name][f'Train {k}'] = v
+        for k, v in test_metrics.items():
+            results[name][f'Test {k}'] = v
+
+
+
+        y_pred_train_samples = idata_train["posterior_predictive"]["y_obs"].values
+        y_pred_train_flat = y_pred_train_samples.reshape(-1, y_pred_train_samples.shape[-1])  # (tirages, obs)
+        train_predictions_for_plots[name] = mode(y_pred_train_flat, axis=0, keepdims=True).mode[0]
+
+        # Pour le Test
+        y_pred_test_samples = idata_test["posterior_predictive"]["y_obs"].values
+        y_pred_test_flat = y_pred_test_samples.reshape(-1, y_pred_test_samples.shape[-1])
+        test_predictions_for_plots[name] = mode(y_pred_test_flat, axis=0, keepdims=True).mode[0]
+
+    return pd.DataFrame(results).T, train_predictions_for_plots, test_predictions_for_plots
 
 def run_shufflesplit(models, X, y, n_splits=5, test_size=0.2, random_state=42):
     cv = StratifiedShuffleSplit(n_splits=n_splits, test_size=test_size, random_state=random_state)
@@ -176,8 +295,8 @@ def run_shufflesplit(models, X, y, n_splits=5, test_size=0.2, random_state=42):
             all_test_preds.extend(test_pred)
 
             # Calcul des metriques d'entrainement et de test pour le fold actuel
-            train_metrics = get_metrics(y_train, train_pred)
-            test_metrics = get_metrics(y_test, test_pred)
+            train_metrics = get_metrics_ML(y_train, train_pred)
+            test_metrics = get_metrics_ML(y_test, test_pred)
 
             # Combinaison des metriques avec des prefixes clairs
             combined_metrics = {}
@@ -224,25 +343,26 @@ def run_loo(models, X, y):
             all_test_preds[test_idx] = test_pred[0]
             all_train_preds.extend(train_pred)
 
-        results[name] = get_metrics(y, all_test_preds)
+        results[name] = get_metrics_ML(y, all_test_preds)
         dict_preds_train[name] = np.array(all_train_preds)
         dict_preds_test[name] = all_test_preds
 
     return pd.DataFrame(results).T, dict_preds_train, y_train_concat, dict_preds_test, y
 
 def load_and_prepare_data(base_csv, personnes_csv, photos_csv):
-    df, _, _, _ = load_and_preprocess_data(base_csv, personnes_csv, photos_csv, drop = None)
+    df, _, _ = load_and_preprocess_data(base_csv, personnes_csv, photos_csv, drop = None)
     # print(df.head().to_string())
 
-    liste_individual_features = [f"age_{i}"for i in range(6)] + ["gender_0", "gender_1", "gender_3"] + ["job_2","job_4","job_6"] + ["electric_bike_False", "electric_bike_True"] + [f"bike_use_frequency_{i}" for i in range(5)] + ["bike_ownership_0","bike_ownership_1"]
     liste_cat = [f"nbr_lane_{i}" for i in range(4)] + [f"speed_{i}"for i in range(4)] + [f"slope_{i}" for i in range(3)] + [f"green_{i}" for i in range(3)] + [f"type_{i}" for i in range(4)]
 
     X = df[liste_cat].copy()
-
     y = df["note"].astype(int)
-    return X, y
 
-def get_models():
+    df, dims, coords = load_and_preprocess_data(base_csv, personnes_csv, photos_csv, drop="first")
+
+    return X, y, df, dims, coords
+
+def get_models_ML():
     return {
         "Classification Tree": DecisionTreeClassifier(random_state=42),
         "Gradient Boost": GradientBoostingClassifier(random_state=42, learning_rate=0.2,
@@ -255,6 +375,13 @@ def get_models():
         "Random Forest": RandomForestClassifier(random_state=42),
         "Ada Boost": AdaBoostClassifier(random_state=42),
         "ExtraTrees": ExtraTreesClassifier(random_state=42)
+    }
+
+def get_models_MCLR(df, dims):
+    return {
+        "MCLR Model 1": [build_model_1(df, dims), ["beta_age", "beta_gender", "beta_job", "beta_electric_bike", "beta_bike_use_frequency", "beta_bike_ownership",
+        "beta_nbr_lanes", "beta_type", "beta_slope", "beta_speed", "beta_green"]],
+        "MCLR Model 2": [build_model_2(df, dims), ["beta_nbr_lanes", "beta_type", "beta_slope", "beta_speed", "beta_green"]]
     }
 
 def get_models_gb():

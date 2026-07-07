@@ -23,11 +23,11 @@ def main():
 
     # 2. Preprocessing
     print("\n=== DATA PREPROCESSING ===")
-    df, dims, coords, cat_cols = load_and_preprocess_data(base_csv, personnes_csv, photos_csv)
+    df, dims, coords = load_and_preprocess_data(base_csv, personnes_csv, photos_csv)
 
     # 3. Model 1 Execution (Full Model)
     print("\n=== MODEL 1 CONSTRUCTION ===")
-    model_1 = build_model_1(df, dims, cat_cols)
+    model_1 = build_model_1(df, dims)
 
     print("\n=== MODEL 1 SAMPLING ===")
     idata_1 = run_sampling(model_1, draws=1000, tune=1000)
@@ -41,7 +41,7 @@ def main():
     prior_predictive_checks(model_1, save=True, model_label="Model 1")
     # 4. Model 2 Execution (Restricted Model)
     print("\n=== MODEL 2 CONSTRUCTION ===")
-    model_2 = build_model_2(df, dims, coords)
+    model_2 = build_model_2(df, dims)
 
     print("\n=== MODEL 2 SAMPLING ===")
     idata_2 = run_sampling(model_2, draws=1000, tune=1000)

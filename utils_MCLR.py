@@ -77,64 +77,81 @@ def load_and_preprocess_data(base_path, personnes_path, photos_path, drop = "fir
         "categories_gender": list(encoder_cat.categories_[3])
     }
 
-    return df_enc, dims, coords, cat_cols
+    return df_enc, dims, coords
 
 
-def build_model_1(encoded_df, dims, cat_cols):
-    """
-    Builds the first PyMC Ordered Logistic model containing both
-    individual socio-demographic features and photo attributes (Full Model).
-    """
-
-    X_age = encoded_df[[col for col in encoded_df.columns if col.startswith('age_')]].values
-    X_gender = encoded_df[[col for col in encoded_df.columns if col.startswith('gender_')]].values
-    X_job = encoded_df[[col for col in encoded_df.columns if col.startswith('job_')]].values
-    X_electric_bike = encoded_df[[col for col in encoded_df.columns if col.startswith('electric_bike_')]].values
-    X_bike_use_frequency = encoded_df[
+def build_model_1(encoded_df, dims):
+    # Extraction des matrices NumPy (comme avant)
+    X_age_np = encoded_df[[col for col in encoded_df.columns if col.startswith('age_')]].values
+    X_gender_np = encoded_df[[col for col in encoded_df.columns if col.startswith('gender_')]].values
+    X_job_np = encoded_df[[col for col in encoded_df.columns if col.startswith('job_')]].values
+    X_electric_bike_np = encoded_df[[col for col in encoded_df.columns if col.startswith('electric_bike_')]].values
+    X_bike_use_frequency_np = encoded_df[
         [col for col in encoded_df.columns if col.startswith('bike_use_frequency_')]].values
-    X_bike_ownership = encoded_df[[col for col in encoded_df.columns if col.startswith('bike_ownership_')]].values
+    X_bike_ownership_np = encoded_df[[col for col in encoded_df.columns if col.startswith('bike_ownership_')]].values
 
-    X_nbr_lanes = encoded_df[[col for col in encoded_df.columns if col.startswith('nbr_lane_')]].values
-    X_type = encoded_df[[col for col in encoded_df.columns if col.startswith('type_')]].values
-    X_slope = encoded_df[[col for col in encoded_df.columns if col.startswith('slope_')]].values
-    X_speed = encoded_df[[col for col in encoded_df.columns if col.startswith('speed_')]].values
-    X_green = encoded_df[[col for col in encoded_df.columns if col.startswith('green_')]].values
+    X_nbr_lanes_np = encoded_df[[col for col in encoded_df.columns if col.startswith('nbr_lane_')]].values
+    X_type_np = encoded_df[[col for col in encoded_df.columns if col.startswith('type_')]].values
+    X_slope_np = encoded_df[[col for col in encoded_df.columns if col.startswith('slope_')]].values
+    X_speed_np = encoded_df[[col for col in encoded_df.columns if col.startswith('speed_')]].values
+    X_green_np = encoded_df[[col for col in encoded_df.columns if col.startswith('green_')]].values
+
+    id_personne_np = encoded_df['id_personne'].values
+    id_photo_np = encoded_df['id_photo'].values
+    note_np = encoded_df['note'].values
 
     with pm.Model() as model:
-        # Cutpoints
-        cutpoints = pm.Normal(
-            'cutpoints',
-            mu=np.linspace(-2, 2, dims["n_notes"] - 1),
-            sigma=1,
-            transform=tr.ordered,
-            shape=dims["n_notes"] - 1
-        )
+        X_age = pm.Data("X_age", X_age_np)
+        X_gender = pm.Data("X_gender", X_gender_np)
+        X_job = pm.Data("X_job", X_job_np)
+        X_electric_bike = pm.Data("X_electric_bike", X_electric_bike_np)
+        X_bike_use_frequency = pm.Data("X_bike_use_frequency", X_bike_use_frequency_np)
+        X_bike_ownership = pm.Data("X_bike_ownership", X_bike_ownership_np)
 
-        # Fixed parameters (Socio-demographic)
-        beta_age = pm.Normal("beta_age", mu=0, sigma=1, shape=dims["n_ages"]-1)
+        X_nbr_lanes = pm.Data("X_nbr_lanes", X_nbr_lanes_np)
+        X_type = pm.Data("X_type", X_type_np)
+        X_slope = pm.Data("X_slope", X_slope_np)
+        X_speed = pm.Data("X_speed", X_speed_np)
+        X_green = pm.Data("X_green", X_green_np)
+
+        id_personne = pm.Data("id_personne", id_personne_np)
+        id_photo = pm.Data("id_photo", id_photo_np)
+
+        y_obs_container = pm.Data("y_obs_data", note_np)
+        # Priors (Inchangés)
+        cutpoints = pm.Normal('cutpoints', mu=np.linspace(-2, 2, dims["n_notes"] - 1), sigma=1,
+                              transform=pm.distributions.transforms.ordered, shape=dims["n_notes"] - 1)
+
+        beta_age = pm.Normal("beta_age", mu=0, sigma=1, shape=dims["n_ages"] - 1)
         beta_gender = pm.Normal("beta_gender", mu=0, sigma=1, shape=dims["n_genders"] - 1)
         beta_job = pm.Normal("beta_job", mu=0, sigma=1, shape=dims["n_jobs"] - 1)
         beta_electric_bike = pm.Normal("beta_electric_bike", mu=0, sigma=1, shape=dims["n_electric_bikes"] - 1)
-        beta_bike_use_frequency = pm.Normal("beta_bike_use_frequency", mu=0, sigma=1, shape=dims["n_bike_use_frequency"] - 1)
+        beta_bike_use_frequency = pm.Normal("beta_bike_use_frequency", mu=0, sigma=1,
+                                            shape=dims["n_bike_use_frequency"] - 1)
         beta_bike_ownership = pm.Normal("beta_bike_ownership", mu=0, sigma=1, shape=dims["n_bike_ownership"] - 1)
 
-        # Fixed parameters (Photo attributes)
-        beta_nbr_lanes = pm.Normal("beta_nbr_lanes", mu=0, sigma=1, shape = dims["n_nbr_lanes"] - 1)
+        beta_nbr_lanes = pm.Normal("beta_nbr_lanes", mu=0, sigma=1, shape=dims["n_nbr_lanes"] - 1)
         beta_type = pm.Normal("beta_type", mu=0, sigma=1, shape=dims["n_types"] - 1)
         beta_slope = pm.Normal("beta_slope", mu=0, sigma=1, shape=dims["n_slopes"] - 1)
         beta_speed = pm.Normal("beta_speed", mu=0, sigma=1, shape=dims["n_speeds"] - 1)
         beta_green = pm.Normal("beta_green", mu=0, sigma=1, shape=dims["n_greens"] - 1)
 
-        # Random effects
+        # Random effects (Taille fixe basée sur l'entraînement)
         sigma_personne = pm.HalfNormal("sigma_personne", sigma=1)
         u_personne = pm.Normal("u_personne", mu=0, sigma=sigma_personne, shape=dims["n_personne"])
 
         sigma_photo = pm.HalfNormal("sigma_photo", sigma=1)
         v_photo = pm.Normal("v_photo", mu=0, sigma=sigma_photo, shape=dims["n_photos"])
 
-        # Latent variable linear combination
+        id_personne_safe = pm.math.switch(id_personne < dims["n_personne"], id_personne, 0)
+        id_photo_safe = pm.math.switch(id_photo < dims["n_photos"], id_photo, 0)
+
+        eff_personne = u_personne[id_personne_safe]
+        eff_photo = v_photo[id_photo_safe]
+
+        # Combinaison linéaire (en utilisant les MutableData)
         mu = (
-                u_personne[encoded_df['id_personne'].values] +
+                eff_personne +
                 pm.math.dot(X_age, beta_age) +
                 pm.math.dot(X_gender, beta_gender) +
                 pm.math.dot(X_job, beta_job) +
@@ -142,7 +159,7 @@ def build_model_1(encoded_df, dims, cat_cols):
                 pm.math.dot(X_bike_use_frequency, beta_bike_use_frequency) +
                 pm.math.dot(X_bike_ownership, beta_bike_ownership) +
 
-                v_photo[encoded_df['id_photo'].values] +
+                eff_photo +
                 pm.math.dot(X_nbr_lanes, beta_nbr_lanes) +
                 pm.math.dot(X_type, beta_type) +
                 pm.math.dot(X_slope, beta_slope) +
@@ -150,44 +167,50 @@ def build_model_1(encoded_df, dims, cat_cols):
                 pm.math.dot(X_green, beta_green)
         )
 
-        pm.OrderedLogistic("y_obs", eta=mu, cutpoints=cutpoints, observed=encoded_df['note'].values)
+        pm.OrderedLogistic("y_obs", eta=mu, cutpoints=cutpoints, observed=y_obs_container)
 
     return model
 
-def build_model_2(encoded_df, dims, coords):
-    """
-    Builds the second PyMC Ordered Logistic model containing only
-    photo attributes and context random effects (Restricted Model).
-    """
-    with pm.Model() as model_2:
-        # Cutpoints
-        cutpoints = pm.Normal(
-            'cutpoints',
-            mu=np.linspace(-2, 2, dims["n_notes"] - 1),
-            sigma=1,
-            transform=tr.ordered,
-            shape=dims["n_notes"] - 1
-        )
-        X_nbr_lanes = encoded_df[[col for col in encoded_df.columns if col.startswith('nbr_lane_')]].values
-        X_type = encoded_df[[col for col in encoded_df.columns if col.startswith('type_')]].values
-        X_slope = encoded_df[[col for col in encoded_df.columns if col.startswith('slope_')]].values
-        X_speed = encoded_df[[col for col in encoded_df.columns if col.startswith('speed_')]].values
-        X_green = encoded_df[[col for col in encoded_df.columns if col.startswith('green_')]].values
+def build_model_2(encoded_df, dims):
+    X_nbr_lanes_np = encoded_df[[col for col in encoded_df.columns if col.startswith('nbr_lane_')]].values
+    X_type_np = encoded_df[[col for col in encoded_df.columns if col.startswith('type_')]].values
+    X_slope_np = encoded_df[[col for col in encoded_df.columns if col.startswith('slope_')]].values
+    X_speed_np = encoded_df[[col for col in encoded_df.columns if col.startswith('speed_')]].values
+    X_green_np = encoded_df[[col for col in encoded_df.columns if col.startswith('green_')]].values
 
-        # Fixed parameters (Photo attributes)
+    id_photo_np = encoded_df['id_photo'].values
+    note_np = encoded_df['note'].values
+
+    with pm.Model() as model:
+
+        X_nbr_lanes = pm.Data("X_nbr_lanes", X_nbr_lanes_np)
+        X_type = pm.Data("X_type", X_type_np)
+        X_slope = pm.Data("X_slope", X_slope_np)
+        X_speed = pm.Data("X_speed", X_speed_np)
+        X_green = pm.Data("X_green", X_green_np)
+
+        id_photo = pm.Data("id_photo", id_photo_np)
+
+        y_obs_container = pm.Data("y_obs_data", note_np)
+        # Priors (Inchangés)
+        cutpoints = pm.Normal('cutpoints', mu=np.linspace(-2, 2, dims["n_notes"] - 1), sigma=1,
+                              transform=pm.distributions.transforms.ordered, shape=dims["n_notes"] - 1)
+
         beta_nbr_lanes = pm.Normal("beta_nbr_lanes", mu=0, sigma=1, shape=dims["n_nbr_lanes"] - 1)
         beta_type = pm.Normal("beta_type", mu=0, sigma=1, shape=dims["n_types"] - 1)
         beta_slope = pm.Normal("beta_slope", mu=0, sigma=1, shape=dims["n_slopes"] - 1)
         beta_speed = pm.Normal("beta_speed", mu=0, sigma=1, shape=dims["n_speeds"] - 1)
         beta_green = pm.Normal("beta_green", mu=0, sigma=1, shape=dims["n_greens"] - 1)
 
-        # Random effects
+        # Random effects (Taille fixe basée sur l'entraînement)
         sigma_photo = pm.HalfNormal("sigma_photo", sigma=1)
         v_photo = pm.Normal("v_photo", mu=0, sigma=sigma_photo, shape=dims["n_photos"])
+        id_photo_safe = pm.math.switch(id_photo < dims["n_photos"], id_photo, 0)
+        eff_photo = v_photo[id_photo_safe]
 
-        # Latent variable linear combination
+        # Combinaison linéaire (en utilisant les MutableData)
         mu = (
-                v_photo[encoded_df['id_photo'].values] +
+                eff_photo +
                 pm.math.dot(X_nbr_lanes, beta_nbr_lanes) +
                 pm.math.dot(X_type, beta_type) +
                 pm.math.dot(X_slope, beta_slope) +
@@ -195,9 +218,9 @@ def build_model_2(encoded_df, dims, coords):
                 pm.math.dot(X_green, beta_green)
         )
 
-        pm.OrderedLogistic("y_obs", eta=mu, cutpoints=cutpoints, observed=encoded_df['note'].values)
+        pm.OrderedLogistic("y_obs", eta=mu, cutpoints=cutpoints, observed=y_obs_container)
 
-    return model_2
+    return model
 
 def run_sampling(model, draws=1000, tune=1000):
     """
@@ -221,6 +244,7 @@ def run_sampling(model, draws=1000, tune=1000):
     with model:
         idata = pm.sample(draws=draws, tune=tune, return_inferencedata=True)
         pm.compute_log_likelihood(idata)
+        pm.sample_posterior_predictive(idata, extend_inferencedata=True)
     return idata
 
 def prior_predictive_checks (model, save = False, model_label = "model"):

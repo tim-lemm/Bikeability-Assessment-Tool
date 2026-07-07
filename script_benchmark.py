@@ -1,5 +1,5 @@
 from sklearn.metrics import accuracy_score, balanced_accuracy_score
-from utils_benchmark import run_train_test, run_shufflesplit, run_loo, load_and_prepare_data, get_models, get_models_gb, plot_confusion_matrices, get_metrics, optimize_model_hp, plot_predictions_distribution
+from utils_benchmark import *
 import pandas as pd
 import os
 from sklearn.ensemble import GradientBoostingClassifier, HistGradientBoostingClassifier, RandomForestClassifier
@@ -14,22 +14,49 @@ photos_csv = "data/survey/data-photos.csv"
 
 def main():
 
-    X, y = load_and_prepare_data(base_csv, personnes_csv, photos_csv)
-    models = (get_models())
+    X, y, df, dims, coords = load_and_prepare_data(base_csv, personnes_csv, photos_csv)
+    models_ML = get_models_ML()
+
     name = ""
     os.makedirs(output_dir, exist_ok=True)
 
     # 1. TRAIN / TEST SPLIT
     print("--- Benchmark : Train / Test Split ---")
-    df_tt, preds_train_tt, y_train_tt, preds_test_tt, y_test_tt = run_train_test(models, X, y, random_state=random_state)
-    print(df_tt.to_string())
-    df_tt.to_csv(os.path.join(output_dir, f"results_train_test{name}.csv"))
 
-    plot_confusion_matrices(y_train_tt, preds_train_tt, title_suffix=f"TrainTest_TRAIN{name}", save=False)
-    plot_confusion_matrices(y_test_tt, preds_test_tt, title_suffix=f"TrainTest_TEST{name}", save=False)
-    plot_predictions_distribution(y_train_tt, preds_train_tt, title_suffix=f"TrainTest_TRAIN{name}", save=False)
-    plot_predictions_distribution(y_test_tt, preds_test_tt, title_suffix=f"TrainTest_TEST{name}", save=False)
-    print("\n")
+    print("\n --> ML")
+    df_tt, preds_train_tt, y_train_tt, preds_test_tt, y_test_tt = run_train_test_ML(models_ML, X, y,
+                                                                                    random_state=random_state)
+
+    print("\n --> MCLR")
+    # On récupère le DataFrame ET les dictionnaires de prédictions (modes)
+    df_results, preds_train_mclr, preds_test_mclr = run_train_test_MCLR(df, dims, random_state=random_state)
+
+    # --- FUSION DES RÉSULTATS DE MÉTRIQUES ---
+    # Option A : Empilement vertical (si df_tt et df_results ont les mêmes colonnes de métriques mais des noms de modèles différents en index)
+    df_results_all = pd.concat([df_tt, df_results])
+
+    # Option B : Si vous préférez fusionner horizontalement (métriques ML et MCLR côte à côte pour les mêmes index)
+    # df_results_all = pd.concat([df_tt, df_results], axis=1)
+
+    print(df_results_all.to_string())
+    df_results_all.to_csv(os.path.join(output_dir, f"results_train_test{name}.csv"))
+
+    # --- VISUALISATIONS COMBINÉES ---
+
+    print("Clés présentes dans le ML :", list(preds_test_tt.keys()))
+    print("Clés présentes dans le MCLR :", list(preds_test_mclr.keys()))
+    all_preds_train = {**preds_train_tt, **preds_train_mclr}
+    all_preds_test = {**preds_test_tt, **preds_test_mclr}
+
+    print("\n --> Génération des graphiques combinés (ML + MCLR)...")
+    # Note : Pour y_train et y_test, on utilise y_train_tt et y_test_tt issus du split scikit-learn
+    plot_confusion_matrices(y_train_tt, all_preds_train, title_suffix=f"TrainTest_TRAIN{name}", save=False, nrows=2,
+                            ncols=4)
+    plot_confusion_matrices(y_test_tt, all_preds_test, title_suffix=f"TrainTest_TEST{name}", save=False, nrows=2,
+                            ncols=4)
+
+    plot_predictions_distribution(y_train_tt, all_preds_train, title_suffix=f"TrainTest_TRAIN{name}", save=False)
+    plot_predictions_distribution(y_test_tt, all_preds_test, title_suffix=f"TrainTest_TEST{name}", save=False)
 
     # # 2. SHUFFLE SPLIT
     # print(f"--- Benchmark : ShuffleSplit ({n_splits}-fold) ---")
@@ -109,8 +136,8 @@ def opti():
     y_test_pred = best_model.predict(X_test)
 
     # Affichage résultats meilleur modéle
-    train_metrics = get_metrics(y_train, y_train_pred)
-    test_metrics = get_metrics(y_test, y_test_pred)
+    train_metrics = get_metrics_ML(y_train, y_train_pred)
+    test_metrics = get_metrics_ML(y_test, y_test_pred)
 
     results = {}
     results["best_model"] = {}
