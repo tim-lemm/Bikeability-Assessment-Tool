@@ -249,20 +249,17 @@ def run_train_test_MCLR(df, dims, test_size=0.2, random_state=42):
         for k, v in test_metrics.items():
             results[name][f'Test {k}'] = v
 
-
-
         y_pred_train_samples = idata_train["posterior_predictive"]["y_obs"].values
-        y_pred_train_flat = y_pred_train_samples.reshape(-1, y_pred_train_samples.shape[-1])  # (tirages, obs)
+        y_pred_train_flat = y_pred_train_samples.reshape(-1, y_pred_train_samples.shape[-1])
         train_predictions_for_plots[name] = mode(y_pred_train_flat, axis=0, keepdims=True).mode[0]
 
-        # Pour le Test
         y_pred_test_samples = idata_test["posterior_predictive"]["y_obs"].values
         y_pred_test_flat = y_pred_test_samples.reshape(-1, y_pred_test_samples.shape[-1])
         test_predictions_for_plots[name] = mode(y_pred_test_flat, axis=0, keepdims=True).mode[0]
 
     return pd.DataFrame(results).T, train_predictions_for_plots, test_predictions_for_plots
 
-def run_shufflesplit(models, X, y, n_splits=5, test_size=0.2, random_state=42):
+def run_shufflesplit_ML(models, X, y, n_splits=5, test_size=0.2, random_state=42):
     cv = StratifiedShuffleSplit(n_splits=n_splits, test_size=test_size, random_state=random_state)
     results = {}
     dict_preds_train = {}
@@ -307,6 +304,123 @@ def run_shufflesplit(models, X, y, n_splits=5, test_size=0.2, random_state=42):
 
             fold_metrics.append(combined_metrics)
 
+        df_folds = pd.DataFrame(fold_metrics)
+        results[name] = df_folds.mean().to_dict()
+        dict_preds_train[name] = np.array(all_train_preds)
+        dict_preds_test[name] = np.array(all_test_preds)
+
+    return pd.DataFrame(results).T, dict_preds_train, y_train_concat, dict_preds_test, y_test_concat
+
+
+def run_shufflesplit_MCLR(df, dims, n_splits=5, test_size=0.2, random_state=42):
+    # Séparation des features et de la cible à partir du DataFrame global
+    X = df.iloc[:, :-1]
+    y = df.iloc[:, -1]
+    models = get_models_MCLR(df, dims)
+    cv = StratifiedShuffleSplit(n_splits=n_splits, test_size=test_size, random_state=random_state)
+    results = {}
+    dict_preds_train = {}
+    dict_preds_test = {}
+
+    splits = list(cv.split(X, y))
+    y_train_concat = []
+    y_test_concat = []
+
+    # 1. Accumulation des vraies valeurs cibles à travers tous les folds
+    for train_idx, test_idx in splits:
+        y_train_concat.extend(y.iloc[train_idx].values)
+        y_test_concat.extend(y.iloc[test_idx].values)
+
+    y_train_concat = np.array(y_train_concat)
+    y_test_concat = np.array(y_test_concat)
+
+    # Fonction utilitaire interne pour extraire le dictionnaire complet requis par pm.set_data
+    def _get_pymc_data_dict(df_fold, y_fold=None):
+        data_dict = {
+            "X_nbr_lanes": df_fold[[col for col in df_fold.columns if col.startswith('nbr_lane_')]].values,
+            "X_type": df_fold[[col for col in df_fold.columns if col.startswith('type_')]].values,
+            "X_slope": df_fold[[col for col in df_fold.columns if col.startswith('slope_')]].values,
+            "X_speed": df_fold[[col for col in df_fold.columns if col.startswith('speed_')]].values,
+            "X_green": df_fold[[col for col in df_fold.columns if col.startswith('green_')]].values,
+            "id_photo": df_fold['id_photo'].values
+        }
+        # Si c'est le Modèle 1, on ajoute les variables socio-démographiques
+        if "X_age" in [v.name for v in model_actif.data_vars]:
+            data_dict.update({
+                "X_age": df_fold[[col for col in df_fold.columns if col.startswith('age_')]].values,
+                "X_gender": df_fold[[col for col in df_fold.columns if col.startswith('gender_')]].values,
+                "X_job": df_fold[[col for col in df_fold.columns if col.startswith('job_')]].values,
+                "X_electric_bike": df_fold[[col for col in df_fold.columns if col.startswith('electric_bike_')]].values,
+                "X_bike_use_frequency": df_fold[
+                    [col for col in df_fold.columns if col.startswith('bike_use_frequency_')]].values,
+                "X_bike_ownership": df_fold[
+                    [col for col in df_fold.columns if col.startswith('bike_ownership_')]].values,
+                "id_personne": df_fold['id_personne'].values
+            })
+        if y_fold is not None:
+            data_dict["y_obs_data"] = y_fold.values
+
+        return data_dict
+
+    # 2. Boucle sur les modèles (votre dictionnaire de modèles PyMC)
+    for name, model_info in models.items():
+        model_actif = model_info[0]
+
+        fold_metrics = []
+        all_train_preds = []
+        all_test_preds = []
+
+        print(f"-> Entraînement et évaluation en Cross-Validation de : {name}")
+
+        for split_idx, (train_idx, test_idx) in enumerate(splits):
+            print(f"   Fold {split_idx + 1}/{n_splits}...")
+
+            df_train = df.iloc[train_idx]
+            df_test = df.iloc[test_idx]
+
+            y_train = df_train.iloc[:, -1]
+            y_test = df_test.iloc[:, -1]
+
+            with model_actif:
+                # --- ÉTAPE A : CONFIGURATION TRAIN & SAMPLING ---
+                train_data_dict = _get_pymc_data_dict(df_train, y_train)
+                pm.set_data(train_data_dict)
+
+                trace = pm.sample(draws=1000, tune=1000, return_inferencedata=True, progressbar=False)
+                idata_train = pm.sample_posterior_predictive(trace, progressbar=False)
+
+                # --- ÉTAPE B : EXTRACTION PRÉDICTIONS TRAIN (MODE) ---
+                y_pred_train_samples = idata_train["posterior_predictive"]["y_obs"].values
+                y_pred_train_flat = y_pred_train_samples.reshape(-1, y_pred_train_samples.shape[-1])
+                train_pred = mode(y_pred_train_flat, axis=0, keepdims=True).mode[0]
+                all_train_preds.extend(train_pred)
+
+                # --- ÉTAPE C : CONFIGURATION TEST & POSTERIOR PREDICTIVE ---
+                test_data_dict = _get_pymc_data_dict(df_test, y_test)
+                pm.set_data(test_data_dict)
+
+                idata_test = pm.sample_posterior_predictive(trace, progressbar=False)
+
+                # --- ÉTAPE D : EXTRACTION PRÉDICTIONS TEST (MODE) ---
+                y_pred_test_samples = idata_test["posterior_predictive"]["y_obs"].values
+                y_pred_test_flat = y_pred_test_samples.reshape(-1, y_pred_test_samples.shape[-1])
+                test_pred = mode(y_pred_test_flat, axis=0, keepdims=True).mode[0]
+                all_test_preds.extend(test_pred)
+
+            # Calcul des métriques bayésiennes globales (moyennées sur l'échantillonnage posterior)
+            train_metrics = get_metrics_MCLR(y_train, idata_train)
+            test_metrics = get_metrics_MCLR(y_test, idata_test)
+
+            # Combinaison des métriques avec préfixes
+            combined_metrics = {}
+            for k, v in train_metrics.items():
+                combined_metrics[f'Train {k}'] = v
+            for k, v in test_metrics.items():
+                combined_metrics[f'Test {k}'] = v
+
+            fold_metrics.append(combined_metrics)
+
+        # 3. Agrégation des résultats du modèle actuel
         df_folds = pd.DataFrame(fold_metrics)
         results[name] = df_folds.mean().to_dict()
         dict_preds_train[name] = np.array(all_train_preds)

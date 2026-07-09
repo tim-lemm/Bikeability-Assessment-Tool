@@ -6,7 +6,8 @@ from sklearn.ensemble import GradientBoostingClassifier, HistGradientBoostingCla
 from sklearn.model_selection import GridSearchCV, train_test_split, StratifiedKFold
 
 random_state=74
-n_splits=100
+n_splits=5
+save = False
 output_dir = "outputs/model_results/benchmark"
 base_csv = "data/survey/data-base.csv"
 personnes_csv = "data/survey/data-personnes.csv"
@@ -32,54 +33,64 @@ def main():
     df_results, preds_train_mclr, preds_test_mclr = run_train_test_MCLR(df, dims, random_state=random_state)
 
     # --- FUSION DES RÉSULTATS DE MÉTRIQUES ---
-    # Option A : Empilement vertical (si df_tt et df_results ont les mêmes colonnes de métriques mais des noms de modèles différents en index)
     df_results_all = pd.concat([df_tt, df_results])
-
-    # Option B : Si vous préférez fusionner horizontalement (métriques ML et MCLR côte à côte pour les mêmes index)
-    # df_results_all = pd.concat([df_tt, df_results], axis=1)
-
     print(df_results_all.to_string())
     df_results_all.to_csv(os.path.join(output_dir, f"results_train_test{name}.csv"))
 
-    # --- VISUALISATIONS COMBINÉES ---
-
+    # --- VISUALISATIONS ---
     print("Clés présentes dans le ML :", list(preds_test_tt.keys()))
     print("Clés présentes dans le MCLR :", list(preds_test_mclr.keys()))
     all_preds_train = {**preds_train_tt, **preds_train_mclr}
     all_preds_test = {**preds_test_tt, **preds_test_mclr}
 
     print("\n --> Génération des graphiques combinés (ML + MCLR)...")
-    # Note : Pour y_train et y_test, on utilise y_train_tt et y_test_tt issus du split scikit-learn
-    plot_confusion_matrices(y_train_tt, all_preds_train, title_suffix=f"TrainTest_TRAIN{name}", save=False, nrows=2,
+    plot_confusion_matrices(y_train_tt, all_preds_train, title_suffix=f"TrainTest_TRAIN{name}", save=save, nrows=2,
                             ncols=4)
-    plot_confusion_matrices(y_test_tt, all_preds_test, title_suffix=f"TrainTest_TEST{name}", save=False, nrows=2,
+    plot_confusion_matrices(y_test_tt, all_preds_test, title_suffix=f"TrainTest_TEST{name}", save=save, nrows=2,
                             ncols=4)
 
-    plot_predictions_distribution(y_train_tt, all_preds_train, title_suffix=f"TrainTest_TRAIN{name}", save=False)
-    plot_predictions_distribution(y_test_tt, all_preds_test, title_suffix=f"TrainTest_TEST{name}", save=False)
-
-    # # 2. SHUFFLE SPLIT
-    # print(f"--- Benchmark : ShuffleSplit ({n_splits}-fold) ---")
-    # df_ss, preds_train_ss, y_train_ss, preds_test_ss, y_test_ss = run_shufflesplit(models, X, y, n_splits=n_splits, random_state=random_state)
-    # print(df_ss.to_string())
-    # df_ss.to_csv(os.path.join(output_dir, f"results_shufflesplit{name}.csv"))
-    #
-    # plot_confusion_matrices(y_train_ss, preds_train_ss, title_suffix=f"ShuffleSplit_TRAIN{name}", save=True)
-    # plot_confusion_matrices(y_test_ss, preds_test_ss, title_suffix=f"ShuffleSplit_TEST{name}", save=True)
-    # plot_predictions_distribution(y_train_ss, preds_train_ss, title_suffix=f"ShuffleSplit_TRAIN{name}", save=True)
-    # plot_predictions_distribution(y_test_ss, preds_test_ss, title_suffix=f"ShuffleSplit_TEST{name}", save=True)
-    # print("\n")
-
-    # # 3. LEAVEONE OUT (LOO)
-    # print("--- Benchmark : Leave-One-Out (LOO) ---")
-    # df_loo, preds_train_loo, y_train_loo, preds_test_loo, y_loo = run_loo(models, X, y)
-    # print(df_loo.to_string())
-    # df_loo.to_csv(os.path.join(output_dir, f"results_loo{name}.csv"))
-    #
-    # plot_confusion_matrices(y_train_loo, preds_train_loo, title_suffix=f"LOO_TRAIN{name}", save=True)
-    # plot_confusion_matrices(y_loo, preds_test_loo, title_suffix=f"LOO_TEST{name}", save=True)
+    plot_predictions_distribution(y_train_tt, all_preds_train, title_suffix=f"TrainTest_TRAIN{name}", save=save)
+    plot_predictions_distribution(y_test_tt, all_preds_test, title_suffix=f"TrainTest_TEST{name}", save=save)
 
 
+
+    # 2. SHUFFLE SPLIT
+    print(f"--- Benchmark : ShuffleSplit ({n_splits}-fold) ---")
+
+    print("\n --> ML")
+    df_ss_ml, preds_train_ss_ml, y_train_ss_ml, preds_test_ss_ml, y_test_ss_ml = run_shufflesplit_ML(
+        models_ML, X, y, n_splits=n_splits, random_state=random_state
+    )
+
+    print("\n --> MCLR")
+    df_ss_mclr, preds_train_ss_mclr, _, preds_test_ss_mclr, _ = run_shufflesplit_MCLR(
+        df, dims, n_splits=n_splits, random_state=random_state
+    )
+
+    # --- FUSION DES RÉSULTATS DE MÉTRIQUES ---
+    df_ss_all = pd.concat([df_ss_ml, df_ss_mclr], axis=0)
+    print(df_ss_all.to_string())
+    df_ss_all.to_csv(os.path.join(output_dir, f"results_shufflesplit{name}.csv"))
+    all_preds_train_ss = {**preds_train_ss_ml, **preds_train_ss_mclr}
+    all_preds_test_ss = {**preds_test_ss_ml, **preds_test_ss_mclr}
+
+    # --- VISUALISATIONS ---
+    print("\n --> Génération des graphiques combinés (ShuffleSplit)...")
+
+    plot_confusion_matrices(
+        y_train_ss_ml, all_preds_train_ss, title_suffix=f"ShuffleSplit_TRAIN{name}", save=save, nrows=2, ncols=4
+    )
+    plot_confusion_matrices(
+        y_test_ss_ml, all_preds_test_ss, title_suffix=f"ShuffleSplit_TEST{name}", save=save, nrows=2, ncols=4
+    )
+
+    plot_predictions_distribution(
+        y_train_ss_ml, all_preds_train_ss, title_suffix=f"ShuffleSplit_TRAIN{name}", save=save
+    )
+    plot_predictions_distribution(
+        y_test_ss_ml, all_preds_test_ss, title_suffix=f"ShuffleSplit_TEST{name}", save=save
+    )
+    print("\n")
 
 
 def opti():
