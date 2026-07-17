@@ -1,9 +1,9 @@
 from utils_benchmark import *
 
 # Global Variables
-random_state = 74
+random_state = 42
 n_splits = 5
-save = False
+save = True
 output_dir = "outputs/model_results/benchmark"
 base_csv = "data/survey/data-base.csv"
 personnes_csv = "data/survey/data-personnes.csv"
@@ -109,18 +109,15 @@ def opti():
     X, y, _, _, _ = load_and_prepare_data(base_csv, personnes_csv, photos_csv)
 
     param_grid = {
-        'criterion': ['gini', 'entropy', 'log_loss'],
-        'n_estimators': [50, 100, 150, 200],
-        'max_depth': [None, 1, 3, 5],
-        'max_features': ['sqrt', 'log2', None],
-        'min_samples_leaf': [1, 2, 3, 10, 25],
-        'min_samples_split': [2, 3, 4],
-        'bootstrap': [True],
-        'oob_score': [accuracy_score, balanced_accuracy_score],
+        'learning_rate': [0.001, 0.01, 0.1, 1],
+        'max_iter': [5,10,15,20, 50, 100, 200, 300],
+        'max_leaf_nodes': [1,2,3,4,5,6,7,8,9,10],
+        'max_depth': [1,2,3,5, 10, 31, 20],
+        'l2_regularization': [0,0.1,0.2,0.5,1]
     }
 
-    model = RandomForestClassifier(random_state=42)
-    model_name = "RandomForestClassifier"
+    model = HistGradientBoostingClassifier(random_state=random_state)
+    model_name = "HistGradientBoostingClassifier"
 
     # Run optimization
     best_model, best_parameter = optimize_model_hp(X, y, model, param_grid, scoring_metric="precision_weighted")

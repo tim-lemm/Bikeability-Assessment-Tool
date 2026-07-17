@@ -8,6 +8,7 @@ import xarray as xr
 import seaborn as sns
 from matplotlib import pyplot as plt
 from scipy.stats import mode
+import joblib
 
 from sklearn.preprocessing import OrdinalEncoder, StandardScaler, OneHotEncoder
 from sklearn.model_selection import (
@@ -44,7 +45,6 @@ def load_and_preprocess_data(base_path, personnes_path, photos_path, drop="first
 
     encoder_cat = OneHotEncoder(dtype=np.int64, drop=drop)
     enc_output = encoder_cat.fit_transform(df[cat_cols]).toarray()
-
     encoded_cols = encoder_cat.get_feature_names_out(cat_cols)
     df_enc = pd.DataFrame(enc_output, columns=encoded_cols, index=df.index)
     df_enc['id_personne'] = df['id_personne']
@@ -111,7 +111,7 @@ def get_models_ML():
                                                      max_depth=5, min_samples_split=2,
                                                      min_samples_leaf=1, n_estimators=500,
                                                      subsample=0.8),
-        "HistGradient Boost": HistGradientBoostingClassifier(random_state=42),
+        "HistGradient Boost": HistGradientBoostingClassifier(random_state=42, l2_regularization=0.5, learning_rate=0.1, max_depth=5,max_iter=15, max_leaf_nodes=7),
         "Random Forest": RandomForestClassifier(random_state=42),
         "Ada Boost": AdaBoostClassifier(random_state=42),
         "ExtraTrees": ExtraTreesClassifier(random_state=42)
@@ -390,10 +390,15 @@ def run_train_test_ML(models, X, y, test_size=0.2, random_state=42):
 
     return pd.DataFrame(results).T, dict_preds_train, y_train, dict_preds_test, y_test
 
+def train_save_unique_model(model, X, y, name, test_size=0.2, random_state=42):
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
+    model.fit(X_train, y_train)
+    os.makedirs("outputs/model_results/models/", exist_ok=True)
+    joblib.dump(model, f'outputs/model_results/models/{name}.joblib')
 
 def run_train_test_MCLR(df, dims, test_size=0.2, random_state=42):
     X, y = df.iloc[:, :-1], df.iloc[:, -1]
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state, stratify=y)
     df_train, df_test = pd.concat([X_train, y_train], axis=1), pd.concat([X_test, y_test], axis=1)
 
     results = {}
