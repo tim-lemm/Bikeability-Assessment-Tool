@@ -148,5 +148,15 @@ def opti():
 
 
 if __name__ == "__main__":
-    main()
+    # main()
     # opti()
+    X, y, _, _, _ = load_and_prepare_data(base_csv, personnes_csv, photos_csv)
+    model = HistGradientBoostingClassifier(random_state=random_state)
+    model_name = "HistGradientBoostingClassifier"
+    train_save_unique_model(model, X, y, model_name)
+    model = GradientBoostingClassifier(random_state=random_state)
+    model_name = "GradientBoostingClassifier"
+    train_save_unique_model(model, X, y, model_name)
+    model = RandomForestClassifier(random_state=random_state)
+    model_name = "RandomForestClassifier"
+    train_save_unique_model(model, X, y, model_name)
