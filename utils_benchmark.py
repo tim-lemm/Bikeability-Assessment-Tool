@@ -7,6 +7,7 @@ import seaborn as sns
 from matplotlib import pyplot as plt
 from scipy.stats import mode
 import joblib
+import shap
 
 from sklearn.preprocessing import OrdinalEncoder, StandardScaler, OneHotEncoder
 from sklearn.model_selection import (
@@ -113,10 +114,10 @@ def get_models_ML():
                                                      max_depth=5, min_samples_split=2,
                                                      min_samples_leaf=1, n_estimators=500,
                                                      subsample=0.8),
-        "HistGradient Boost": HistGradientBoostingClassifier(random_state=RANDOM_STATE, l2_regularization=0.5, learning_rate=0.1, max_depth=5,max_iter=15, max_leaf_nodes=7),
+        "HistGradient Boost": HistGradientBoostingClassifier(random_state=RANDOM_STATE, l2_regularization=0.5, learning_rate=0.1, max_depth=5 ,max_iter=15, max_leaf_nodes=7),
         "Random Forest": RandomForestClassifier(random_state=RANDOM_STATE),
         "Ada Boost": AdaBoostClassifier(random_state=RANDOM_STATE),
-        "ExtraTrees": ExtraTreesClassifier(random_state=RANDOM_STATE)
+        "ExtraTrees": ExtraTreesClassifier(random_state=RANDOM_STATE, max_depth=5)
     }
 
 
@@ -888,3 +889,50 @@ def evaluate_and_save_results(model, idata, df, var_names, model_label="Model", 
         plt.savefig(save_path + f"{model_label}_khat_plot.png")
     else:
         plt.show()
+
+
+def run_shap_analysis(X, y, model_name="HistGradient Boost"):
+    """
+    Entraîne le modèle spécifié et génère les graphiques d'explicabilité SHAP.
+    """
+    # 1. Séparation train/test cohérente
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=RANDOM_STATE)
+
+    # 2. Récupérer et entraîner le modèle
+    models = get_models_ML()
+    if model_name not in models:
+        raise ValueError(f"Modèle {model_name} non trouvé dans get_models_ML()")
+
+    model = models[model_name]
+    print(f"-> Entraînement de {model_name} pour l'analyse SHAP...")
+    model.fit(X_train, y_train)
+
+    # 3. Calcul des valeurs SHAP avec un masker explicite (nécessaire pour HistGradientBoosting)
+    print(f"-> Calcul des valeurs SHAP...")
+    masker = shap.maskers.Independent(X_train)
+    explainer = shap.Explainer(model.predict_proba, masker)
+
+    shap_values = explainer(X_test)
+
+    # 4. Génération et sauvegarde du graphique global (Summary Plot)
+    plt.figure(figsize=(10, 6))
+    shap.summary_plot(shap_values, X_test, show=False, )
+    plt.title(f"Impact global des caractéristiques (SHAP) - {model_name}", fontsize=14, fontweight='bold', pad=15)
+    plt.tight_layout()
+
+    os.makedirs("outputs/model_results/benchmark/plots/", exist_ok=True)
+    save_path = f"outputs/model_results/benchmark/plots/shap_summary_{model_name.lower().replace(' ', '_')}.png"
+    plt.savefig(save_path, bbox_inches='tight')
+    plt.show()
+    print(f"-> Graphique SHAP sauvegardé dans : {save_path}")
+
+    for i in [0,1,2,3,4]:
+        plt.figure(figsize=(12, 8))
+        shap.summary_plot(shap_values[:, :, i], X_test, plot_type="dot", show=False)
+        plt.title(f"Nuage de points SHAP (Beeswarm) - {model_name} - class : {i}", fontsize=14, fontweight='bold', pad=15)
+        plt.tight_layout()
+        save_path = f"outputs/model_results/benchmark/plots/shap_beeswarm_{i}_{model_name.lower().replace(' ', '_')}.png"
+        plt.savefig(save_path, bbox_inches='tight')
+        plt.show()
+
+    print(f"-> Graphique beeswarm sauvegardé dans : {save_path}")

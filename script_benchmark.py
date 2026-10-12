@@ -1,4 +1,5 @@
 from utils_benchmark import *
+import shap
 
 # Global Variables
 n_splits = 5
@@ -102,6 +103,8 @@ def main():
     plot_predictions_distribution(y_test_ss_ml, all_preds_test_ss, title_suffix=f"ShuffleSplit_TEST{name}", save=save)
     print("\n")
 
+    print("\n --> Génération de l'analyse SHAP (HistGradient Boost)...")
+    run_shap_analysis(X, y, model_name="HistGradient Boost")
 
 def opti():
     X, y, _, _, _ = load_and_prepare_data(base_csv, personnes_csv, photos_csv)
@@ -118,7 +121,7 @@ def opti():
     model_name = "HistGradientBoostingClassifier"
 
     # Run optimization
-    best_model, best_parameter = optimize_model_hp(X, y, model, param_grid, scoring_metric="precision_weighted")
+    best_model, best_parameter = optimize_model_hp(X, y, model, param_grid, scoring_metric="accuracy")
     df_best_parameters = pd.DataFrame([best_parameter])
     print(df_best_parameters.to_string())
     df_best_parameters.to_csv(os.path.join(output_dir, f"results_GS_best_parameter_{model_name}.csv"))
