@@ -36,12 +36,15 @@ from config import *
 # ==========================================
 
 def load_and_preprocess_data(base_path, personnes_path, photos_path, drop="first"):
-    df = import_and_merge_data_base(base_path, personnes_path, photos_path)
+    df_all = import_and_merge_data_base(base_path, personnes_path, photos_path)
+    df_all = df_all[df_all['job']==6]
+    df = df_all[df_all['postal_code'].between(69000, 70000, inclusive='neither')]
     df['id_personne'] = df['id_personne'].astype('category').cat.codes
     df['id_photo'] = df['id_photo'].astype('category').cat.codes
-    cat_cols = ['age', 'gender', 'job', 'electric_bike', 'speed', 'slope', 'green', 'type',
-                'bike_use_frequency', 'bike_ownership', 'nbr_lane']
-
+    # cat_cols = ['age', 'gender', 'job', 'electric_bike', 'speed', 'slope', 'green', 'type',
+    #             'bike_use_frequency', 'bike_ownership', 'nbr_lane']
+    cat_cols = ['age', 'gender', 'electric_bike', 'speed', 'slope', 'green', 'type',
+                       'bike_use_frequency', 'bike_ownership', 'nbr_lane']
     encoder_cat = OneHotEncoder(dtype=np.int64, drop=drop)
     enc_output = encoder_cat.fit_transform(df[cat_cols]).toarray()
     encoded_cols = encoder_cat.get_feature_names_out(cat_cols)
@@ -58,7 +61,7 @@ def load_and_preprocess_data(base_path, personnes_path, photos_path, drop="first
         "n_genders": cat_counts["gender"],
         "n_bike_use_frequency": cat_counts["bike_use_frequency"],
         "n_ages": cat_counts["age"],
-        "n_jobs": cat_counts["job"],
+        # "n_jobs": cat_counts["job"],
         "n_bike_ownership": cat_counts["bike_ownership"],
         "n_electric_bikes": cat_counts["electric_bike"],
         "n_photos": df_enc["id_photo"].nunique(),
@@ -172,7 +175,7 @@ def build_model_1(encoded_df, dims):
 
         beta_age = pm.Normal("beta_age", mu=0, sigma=1, shape=dims["n_ages"] - 1)
         beta_gender = pm.Normal("beta_gender", mu=0, sigma=1, shape=dims["n_genders"] - 1)
-        beta_job = pm.Normal("beta_job", mu=0, sigma=1, shape=dims["n_jobs"] - 1)
+        # beta_job = pm.Normal("beta_job", mu=0, sigma=1, shape=dims["n_jobs"] - 1)
         beta_electric_bike = pm.Normal("beta_electric_bike", mu=0, sigma=1, shape=dims["n_electric_bikes"] - 1)
         beta_bike_use_frequency = pm.Normal("beta_bike_use_frequency", mu=0, sigma=1,
                                             shape=dims["n_bike_use_frequency"] - 1)
@@ -199,7 +202,7 @@ def build_model_1(encoded_df, dims):
         # Linear combination (using MutableData)
         mu = (
                 eff_personne + pm.math.dot(X_age, beta_age) + pm.math.dot(X_gender, beta_gender) +
-                pm.math.dot(X_job, beta_job) + pm.math.dot(X_electric_bike, beta_electric_bike) +
+                # pm.math.dot(X_job, beta_job) + pm.math.dot(X_electric_bike, beta_electric_bike) +
                 pm.math.dot(X_bike_use_frequency, beta_bike_use_frequency) + pm.math.dot(X_bike_ownership,
                                                                                          beta_bike_ownership) +
                 eff_photo + pm.math.dot(X_nbr_lanes, beta_nbr_lanes) + pm.math.dot(X_type, beta_type) +

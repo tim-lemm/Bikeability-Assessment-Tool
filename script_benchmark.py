@@ -12,8 +12,7 @@ photos_csv = "data/survey/data-photos.csv"
 def main():
     X, y, df, dims, coords = load_and_prepare_data(base_csv, personnes_csv, photos_csv)
     models_ML = get_models_ML()
-
-    name = ""
+    name = "_student_lyon"
     os.makedirs(output_dir, exist_ok=True)
 
     # 1. TRAIN / TEST SPLIT
@@ -145,10 +144,7 @@ def opti():
     df_results.to_csv(os.path.join(output_dir, f"results_GS_{model_name}.csv"))
     print(df_results.to_string())
 
-
-if __name__ == "__main__":
-    # main()
-    # opti()
+def save_models():
     X, y, _, _, _ = load_and_prepare_data(base_csv, personnes_csv, photos_csv)
     model = HistGradientBoostingClassifier(random_state=RANDOM_STATE)
     model_name = "HistGradientBoostingClassifier"
@@ -159,3 +155,8 @@ if __name__ == "__main__":
     model = RandomForestClassifier(random_state=RANDOM_STATE)
     model_name = "RandomForestClassifier"
     train_save_unique_model(model, X, y, model_name)
+
+if __name__ == "__main__":
+    main()
+    # opti()
+    # save()
