@@ -1,5 +1,3 @@
-import os
-import numpy as np
 import pandas as pd
 import pymc as pm
 import pymc.distributions.transforms as tr
@@ -31,6 +29,7 @@ from sklearn.ensemble import (
 
 from utils_survey_analysis import import_and_merge_data_base
 
+from config import *
 
 # ==========================================
 # 1. DATA PREPARATION
@@ -106,26 +105,26 @@ def _split_data(X, y, train_idx, test_idx):
 
 def get_models_ML():
     return {
-        "Classification Tree": DecisionTreeClassifier(random_state=42),
-        "Gradient Boost": GradientBoostingClassifier(random_state=42, learning_rate=0.2,
+        "Classification Tree": DecisionTreeClassifier(random_state=RANDOM_STATE),
+        "Gradient Boost": GradientBoostingClassifier(random_state=RANDOM_STATE, learning_rate=0.2,
                                                      max_depth=5, min_samples_split=2,
                                                      min_samples_leaf=1, n_estimators=500,
                                                      subsample=0.8),
-        "HistGradient Boost": HistGradientBoostingClassifier(random_state=42, l2_regularization=0.5, learning_rate=0.1, max_depth=5,max_iter=15, max_leaf_nodes=7),
-        "Random Forest": RandomForestClassifier(random_state=42),
-        "Ada Boost": AdaBoostClassifier(random_state=42),
-        "ExtraTrees": ExtraTreesClassifier(random_state=42)
+        "HistGradient Boost": HistGradientBoostingClassifier(random_state=RANDOM_STATE, l2_regularization=0.5, learning_rate=0.1, max_depth=5,max_iter=15, max_leaf_nodes=7),
+        "Random Forest": RandomForestClassifier(random_state=RANDOM_STATE),
+        "Ada Boost": AdaBoostClassifier(random_state=RANDOM_STATE),
+        "ExtraTrees": ExtraTreesClassifier(random_state=RANDOM_STATE)
     }
 
 
 def get_models_gb():
     return {
-        "Gradient Boost 0": GradientBoostingClassifier(random_state=42),
-        "Gradient Boost 1": GradientBoostingClassifier(random_state=42, max_depth=1),
-        "Gradient Boost 2": GradientBoostingClassifier(random_state=42, max_depth=2),
-        "Gradient Boost 3": GradientBoostingClassifier(random_state=42, max_depth=3),
-        "Gradient Boost 4": GradientBoostingClassifier(random_state=42, max_depth=4),
-        "Gradient Boost 5": GradientBoostingClassifier(random_state=42, max_depth=5)
+        "Gradient Boost 0": GradientBoostingClassifier(random_state=RANDOM_STATE),
+        "Gradient Boost 1": GradientBoostingClassifier(random_state=RANDOM_STATE, max_depth=1),
+        "Gradient Boost 2": GradientBoostingClassifier(random_state=RANDOM_STATE, max_depth=2),
+        "Gradient Boost 3": GradientBoostingClassifier(random_state=RANDOM_STATE, max_depth=3),
+        "Gradient Boost 4": GradientBoostingClassifier(random_state=RANDOM_STATE, max_depth=4),
+        "Gradient Boost 5": GradientBoostingClassifier(random_state=RANDOM_STATE, max_depth=5)
     }
 
 

@@ -1,3 +1,13 @@
+import os
+import random
+import numpy as np
+
+#seeds
+os.environ['PYTHONHASHSEED'] = '42'
+random.seed(42)
+np.random.seed(42)
+RANDOM_STATE = 42
+
 #file paths
 base_filepath = 'data/IGN/'
 filepath_bdtopo = base_filepath + 'BDTOPO_Express_v3.4/BDTOPO-EXPRESS_3-4__GPKG_LAMB93_FXX_2025-06-01/BDTOPO-EXPRESS/1_DONNEES_LIVRAISON_2025-06-00002/BDT_3-4_EXPRESS_GPKG_LAMB93_FXX_ED2025-06-01/TRANSPORT/troncon_de_route.gpkg'

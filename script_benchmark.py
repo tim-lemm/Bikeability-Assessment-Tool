@@ -1,7 +1,6 @@
 from utils_benchmark import *
 
 # Global Variables
-random_state = 42
 n_splits = 5
 save = True
 output_dir = "outputs/model_results/benchmark"
@@ -22,13 +21,13 @@ def main():
 
     print("\n --> ML")
     df_tt, preds_train_tt, y_train_tt, preds_test_tt, y_test_tt = run_train_test_ML(
-        models_ML, X, y, random_state=random_state
+        models_ML, X, y, random_state=RANDOM_STATE
     )
 
     print("\n --> MCLR")
     # Retrieve the DataFrame AND prediction dictionaries (modes)
     df_results, test_probabilities, train_probabilities, preds_train_mclr, preds_test_mclr = run_train_test_MCLR(
-        df, dims, random_state=random_state
+        df, dims, random_state=RANDOM_STATE
     )
 
 
@@ -76,12 +75,12 @@ def main():
 
     print("\n --> ML")
     df_ss_ml, preds_train_ss_ml, y_train_ss_ml, preds_test_ss_ml, y_test_ss_ml = run_shufflesplit_ML(
-        models_ML, X, y, n_splits=n_splits, random_state=random_state
+        models_ML, X, y, n_splits=n_splits, random_state=RANDOM_STATE
     )
 
     print("\n --> MCLR")
     df_ss_mclr, preds_train_ss_mclr, _, preds_test_ss_mclr, _ = run_shufflesplit_MCLR(
-        df, dims, n_splits=n_splits, random_state=random_state
+        df, dims, n_splits=n_splits, random_state=RANDOM_STATE
     )
 
     # --- MERGING METRIC RESULTS ---
@@ -116,7 +115,7 @@ def opti():
         'l2_regularization': [0,0.1,0.2,0.5,1]
     }
 
-    model = HistGradientBoostingClassifier(random_state=random_state)
+    model = HistGradientBoostingClassifier(random_state=RANDOM_STATE)
     model_name = "HistGradientBoostingClassifier"
 
     # Run optimization
@@ -126,7 +125,7 @@ def opti():
     df_best_parameters.to_csv(os.path.join(output_dir, f"results_GS_best_parameter_{model_name}.csv"))
 
     # Train the best model
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=RANDOM_STATE)
     best_model.fit(X_train, y_train)
 
     y_train_pred = best_model.predict(X_train)
@@ -151,12 +150,12 @@ if __name__ == "__main__":
     # main()
     # opti()
     X, y, _, _, _ = load_and_prepare_data(base_csv, personnes_csv, photos_csv)
-    model = HistGradientBoostingClassifier(random_state=random_state)
+    model = HistGradientBoostingClassifier(random_state=RANDOM_STATE)
     model_name = "HistGradientBoostingClassifier"
     train_save_unique_model(model, X, y, model_name)
-    model = GradientBoostingClassifier(random_state=random_state)
+    model = GradientBoostingClassifier(random_state=RANDOM_STATE)
     model_name = "GradientBoostingClassifier"
     train_save_unique_model(model, X, y, model_name)
-    model = RandomForestClassifier(random_state=random_state)
+    model = RandomForestClassifier(random_state=RANDOM_STATE)
     model_name = "RandomForestClassifier"
     train_save_unique_model(model, X, y, model_name)
