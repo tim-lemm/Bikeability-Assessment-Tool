@@ -393,11 +393,11 @@ def run_train_test_ML(models, X, y, test_size=0.2, random_state=42):
 
     return pd.DataFrame(results).T, dict_preds_train, y_train, dict_preds_test, y_test
 
-def train_save_unique_model(model, X, y, name, test_size=0.2, random_state=42):
+def train_save_unique_model(model, X, y, name, test_size=0.2, random_state=42, filepath = "outputs/model_results/models/"):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
     model.fit(X_train, y_train)
-    os.makedirs("outputs/model_results/models/", exist_ok=True)
-    joblib.dump(model, f'outputs/model_results/models/{name}.joblib')
+    os.makedirs(filepath, exist_ok=True)
+    joblib.dump(model, f'{filepath}{name}.joblib')
 
 def run_train_test_MCLR(df, dims, test_size=0.2, random_state=42):
     X, y = df.iloc[:, :-1], df.iloc[:, -1]

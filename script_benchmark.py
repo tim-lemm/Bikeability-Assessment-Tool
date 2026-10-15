@@ -148,18 +148,13 @@ def opti():
     print(df_results.to_string())
 
 def save_models():
+    filepath_save = "data/models/"
+    model_ML = get_models_ML()
     X, y, _, _, _ = load_and_prepare_data(base_csv, personnes_csv, photos_csv)
-    model = HistGradientBoostingClassifier(random_state=RANDOM_STATE)
-    model_name = "HistGradientBoostingClassifier"
-    train_save_unique_model(model, X, y, model_name)
-    model = GradientBoostingClassifier(random_state=RANDOM_STATE)
-    model_name = "GradientBoostingClassifier"
-    train_save_unique_model(model, X, y, model_name)
-    model = RandomForestClassifier(random_state=RANDOM_STATE)
-    model_name = "RandomForestClassifier"
-    train_save_unique_model(model, X, y, model_name)
+    for model_name, model in model_ML.items():
+        train_save_unique_model(model, X, y, model_name, filepath=filepath_save)
 
 if __name__ == "__main__":
-    main()
+    # main()
     # opti()
-    # save()
+    save_models()
