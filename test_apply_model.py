@@ -75,9 +75,9 @@ for model_name in list_model_name:
     plt.savefig(f"outputs/maps/map_{model_name}.png", dpi=600)
     # plt.show()
 
-    # # save html map
-    # m = gdf_routes_with_notes.explore(column="note")
-    # m.save(f"outputs/maps/map_{model_name}.html")
+    # save html map
+    m = gdf_routes_with_notes.explore(column="note")
+    m.save(f"outputs/maps/map_{model_name}.html")
 
 # save all results
 gdf_routes_all_notes = gdf_routes_clean.copy()
@@ -88,18 +88,17 @@ gdf_routes_all_notes.to_csv("outputs/maps/gdf_routes_all_notes.csv")
 
 # gdf_routes_all_notes = gpd.read_file("outputs/maps/gdf_routes_all_notes.csv")
 # plot maps comparaison Ada - RAF
-
+note_columns = ['note_ada_boost_optimized', "note_classification_tree_optimized", "note_extratrees_optimized",
+                                                 "note_gradient_boost_optimized", "note_histgradient_boost_optimized", "note_random_forest_optimized"]
 gdf_routes_comparaison = gdf_routes_all_notes.copy()
 gdf_routes_comparaison = gdf_routes_comparaison[['geometry', 'cleabs',"type","speed","green","nbr_lane","slope",
                                                  'nom_collaboratif_gauche', 'nom_collaboratif_droite',
-                                                 'note_Ada Boost', "note_Classification Tree", "note_ExtraTrees",
-                                                 "note_Gradient Boost", "note_HistGradient Boost", "note_Random Forest"]]
-note_columns = ['note_Ada Boost', "note_Classification Tree", "note_ExtraTrees",
-                                                 "note_Gradient Boost", "note_HistGradient Boost", "note_Random Forest"]
+                                                 ] + note_columns]
+
 
 gdf_routes_comparaison[note_columns]=gdf_routes_comparaison[note_columns].astype(int)
 
-gdf_routes_comparaison['ada-raf']=gdf_routes_comparaison["note_Ada Boost"]-gdf_routes_comparaison["note_Random Forest"]
+gdf_routes_comparaison['ada-raf']=gdf_routes_comparaison["note_ada_boost_optimized"]-gdf_routes_comparaison["note_random_forest_optimized"]
 
 fig, (ax_map, ax_hist) = plt.subplots(2, 1, figsize=(7, 10), gridspec_kw={'height_ratios': [3, 1]})
 fig.set_dpi(600)

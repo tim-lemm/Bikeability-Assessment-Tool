@@ -1,5 +1,7 @@
 from utils_benchmark import *
 import shap
+from sklearn.model_selection import RandomizedSearchCV
+from scipy.stats import uniform, randint
 
 # Global Variables
 n_splits = 5
@@ -106,47 +108,6 @@ def main():
     print("\n --> Génération de l'analyse SHAP (HistGradient Boost)...")
     run_shap_analysis(X, y, model_name="HistGradient Boost")
 
-def opti():
-    X, y, _, _, _ = load_and_prepare_data(base_csv, personnes_csv, photos_csv)
-
-    param_grid = {
-        'learning_rate': [0.001, 0.01, 0.1, 1],
-        'max_iter': [5,10,15,20, 50, 100, 200, 300],
-        'max_leaf_nodes': [1,2,3,4,5,6,7,8,9,10],
-        'max_depth': [1,2,3,5, 10, 31, 20],
-        'l2_regularization': [0,0.1,0.2,0.5,1]
-    }
-
-    model = HistGradientBoostingClassifier(random_state=RANDOM_STATE)
-    model_name = "HistGradientBoostingClassifier"
-
-    # Run optimization
-    best_model, best_parameter = optimize_model_hp(X, y, model, param_grid, scoring_metric="accuracy")
-    df_best_parameters = pd.DataFrame([best_parameter])
-    print(df_best_parameters.to_string())
-    df_best_parameters.to_csv(os.path.join(output_dir, f"results_GS_best_parameter_{model_name}.csv"))
-
-    # Train the best model
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=RANDOM_STATE)
-    best_model.fit(X_train, y_train)
-
-    y_train_pred = best_model.predict(X_train)
-    y_test_pred = best_model.predict(X_test)
-
-    # Display results of the best model
-    train_metrics = get_metrics_ML(y_train, y_train_pred)
-    test_metrics = get_metrics_ML(y_test, y_test_pred)
-
-    results = {"best_model": {}}
-    for k, v in train_metrics.items():
-        results["best_model"][f'Train {k}'] = v
-    for k, v in test_metrics.items():
-        results["best_model"][f'Test {k}'] = v
-
-    df_results = pd.DataFrame(results).T
-    df_results.to_csv(os.path.join(output_dir, f"results_GS_{model_name}.csv"))
-    print(df_results.to_string())
-
 def save_models():
     filepath_save = "data/models/"
     model_ML = get_models_ML()
@@ -154,7 +115,91 @@ def save_models():
     for model_name, model in model_ML.items():
         train_save_unique_model(model, X, y, model_name, filepath=filepath_save)
 
+
+def opti_randomized(n_iter = 10):
+    X, y, df, dims, coords = load_and_prepare_data(base_csv, personnes_csv, photos_csv)
+    models_ML = get_models_ML()
+    cv = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=RANDOM_STATE)
+
+    param_distributions = {
+        "Classification Tree": {
+            'max_depth': randint(3, 15),
+            'min_samples_split': randint(2, 10),
+            'min_samples_leaf': randint(1, 10)
+        },
+        "Gradient Boost": {
+            'n_estimators': randint(50, 300),
+            'learning_rate': uniform(0.01, 0.2),
+            'max_depth': randint(1, 15),
+            'subsample': uniform(0.6, 0.4)
+        },
+        "HistGradient Boost": {
+            'learning_rate': uniform(0.01, 0.2),
+            'max_iter': randint(50, 300),
+            'max_depth': randint(1, 15),
+            'l2_regularization': uniform(0.0, 1.0)
+        },
+        "Random Forest": {
+            'n_estimators': randint(50, 300),
+            'max_depth': randint(1, 15),
+            'min_samples_split': randint(2, 10),
+            'min_samples_leaf': randint(1, 10)
+        },
+        "Ada Boost": {
+            'n_estimators': randint(50, 300),
+            'learning_rate': uniform(0.01, 1.0)
+        },
+        "ExtraTrees": {
+            'n_estimators': randint(50, 300),
+            'max_depth': randint(1, 15),
+            'min_samples_split': randint(2, 10),
+            'min_samples_leaf': randint(1, 10)
+        }
+    }
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=RANDOM_STATE)
+    results_summary = {}
+
+    for name, model in models_ML.items():
+        if name not in param_distributions:
+            continue
+        print(f"Randomized Search for model : {name}")
+
+        search = RandomizedSearchCV(
+            estimator=model,
+            param_distributions=param_distributions[name],
+            n_iter=n_iter,
+            scoring='balanced_accuracy',
+            cv=cv,
+            n_jobs=-1,
+            random_state=RANDOM_STATE
+        )
+
+        search.fit(X_train, y_train)
+        best_model = search.best_estimator_
+
+        safe_name = name.lower().replace(" ", "_")
+        joblib.dump(best_model, f"outputs/model_results/models/{safe_name}_optimized.joblib")
+
+        train_preds = best_model.predict(X_train)
+        test_preds = best_model.predict(X_test)
+
+        train_metrics = get_metrics_ML(y_train, train_preds)
+        test_metrics = get_metrics_ML(y_test, test_preds)
+
+        results_summary[name] = {
+            'best_params': search.best_params_,
+            'best_score_cv': search.best_score_,
+            'train_metrics': train_metrics,
+            'test_metrics': test_metrics,
+            'model': best_model
+        }
+
+    return results_summary
+
 if __name__ == "__main__":
     # main()
-    # opti()
-    save_models()
+    results_summary = opti_randomized(n_iter=2000)
+    results_summary = pd.DataFrame(results_summary)
+    results_summary.to_csv(os.path.join(output_dir, "results_summary.csv"))
+    # save_models()
