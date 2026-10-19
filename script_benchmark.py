@@ -197,9 +197,54 @@ def opti_randomized(n_iter = 10):
 
     return results_summary
 
+
+def run_shap_on_loaded_models():
+    # 1. Charger les données en utilisant vos utilitaires existants[cite: 1, 2]
+    X, y, df, dims, coords = load_and_prepare_data(base_csv, personnes_csv, photos_csv)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=RANDOM_STATE)
+
+    filepath_load = "outputs/model_results/models/"
+    output_plot_dir = "outputs/model_results/benchmark/plots/"
+    os.makedirs(output_plot_dir, exist_ok=True)
+
+    if not os.path.exists(filepath_load):
+        print(f"Le dossier {filepath_load} est introuvable.")
+        return
+
+    # 2. Parcourir tous les fichiers du dossier de modèles
+    for filename in os.listdir(filepath_load):
+        if filename.endswith(".joblib") and "optimized" in filename:
+            model_path = os.path.join(filepath_load, filename)
+            model_name = filename.replace("_optimized.joblib", "").replace("_", " ").title()
+
+            print(f"\n-> Chargement du modèle : {model_name}")
+            model = joblib.load(model_path)
+
+            try:
+                print(f"-> Calcul des valeurs SHAP pour {model_name}...")
+                masker = shap.maskers.Independent(X_train, max_samples=X_train.shape[0])
+                explainer = shap.Explainer(model.predict_proba, masker)
+                shap_values = explainer(X_test)
+
+                # 3. Génération et sauvegarde du graphique global (Summary Plot)
+                plt.figure(figsize=(10, 6))
+                shap.summary_plot(shap_values, X_test, show=False)
+                plt.title(f"Impact global SHAP - {model_name}", fontsize=14, fontweight='bold', pad=15)
+                plt.tight_layout()
+
+                save_path = os.path.join(output_plot_dir, f"shap_summary_{filename.replace('.joblib', '')}.png")
+                plt.savefig(save_path, bbox_inches='tight')
+                plt.close()
+                print(f"-> Graphique sauvegardé dans : {save_path}")
+
+            except Exception as e:
+                print(f"Erreur lors de l'analyse SHAP pour {filename} : {e}")
+
 if __name__ == "__main__":
     # main()
-    results_summary = opti_randomized(n_iter=2000)
-    results_summary = pd.DataFrame(results_summary)
-    results_summary.to_csv(os.path.join(output_dir, "results_summary.csv"))
+    # results_summary = opti_randomized(n_iter=2000)
+    # results_summary = pd.DataFrame(results_summary)
+    # results_summary.to_csv(os.path.join(output_dir, "results_summary.csv"))
+
+    run_shap_on_loaded_models()
     # save_models()
