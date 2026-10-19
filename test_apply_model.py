@@ -70,4 +70,4 @@ for model_name in list_model_name:
     ax_hist.spines['right'].set_visible(False)
 
     plt.tight_layout()
-    plt.show()
+    plt.savefig(f"outputs/maps/map_{model_name}.png")
