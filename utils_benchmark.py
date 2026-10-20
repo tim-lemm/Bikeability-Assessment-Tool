@@ -111,11 +111,13 @@ def get_models_ML():
     return {
         "Classification Tree": DecisionTreeClassifier(random_state=RANDOM_STATE, max_depth=3, min_samples_leaf=4, min_samples_split=3),
         "Gradient Boost": GradientBoostingClassifier(learning_rate=np.float64(0.1416204436112984),
-                           max_depth=1, n_estimators=244, random_state=RANDOM_STATE,
+                           max_depth=1,#???
+                                                     n_estimators=244, random_state=RANDOM_STATE,
                            subsample=np.float64(0.7806957903925775)),
         "HistGradient Boost": HistGradientBoostingClassifier(l2_regularization=np.float64(0.8960912999234932),
                                learning_rate=np.float64(0.07360069499437277),
-                               max_depth=1, max_iter=178, max_leaf_nodes=7,
+                               max_depth=1,#???
+                                                             max_iter=178, max_leaf_nodes=7,
                                random_state=RANDOM_STATE),
         "Random Forest": RandomForestClassifier(max_depth=11, min_samples_leaf=8, min_samples_split=6,
                        n_estimators=70, random_state=RANDOM_STATE),

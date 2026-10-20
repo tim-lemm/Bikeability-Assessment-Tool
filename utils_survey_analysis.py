@@ -347,7 +347,7 @@ def plot_percentage_bar(data, col, title, ylabel, xlabel, save_path):
                  fontsize=10)
     plt.ylabel(ylabel)
     plt.title(title)
-    plt.savefig(rf"{save_path}/survey/répartition_{col}.png")
+    plt.savefig(rf"{save_path}/répartition_{col}.png")
     plt.close()
 
 def plot_bike_types(df, save_path):
@@ -379,7 +379,7 @@ def plot_bike_types(df, save_path):
         plt.text(bar.get_width() + 1, bar.get_y() + bar.get_height() / 2, f'{percentages[i]:.1f}%', va='center',
                  fontsize=10)
 
-    plt.savefig(rf"{save_path}/survey/répartition_type_bike.png")
+    plt.savefig(rf"{save_path}/répartition_type_bike.png")
     plt.close()
 
 def analyse_best_worst(filepath, save_path):

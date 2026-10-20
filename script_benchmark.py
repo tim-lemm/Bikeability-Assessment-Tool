@@ -105,9 +105,6 @@ def main():
     plot_predictions_distribution(y_test_ss_ml, all_preds_test_ss, title_suffix=f"ShuffleSplit_TEST{name}", save=save)
     print("\n")
 
-    print("\n --> Génération de l'analyse SHAP (HistGradient Boost)...")
-    run_shap_analysis(X, y, model_name="HistGradient Boost")
-
 def save_models():
     filepath_save = "data/models/"
     model_ML = get_models_ML()

@@ -10,7 +10,8 @@ from utils_survey_analysis import (
     plot_bike_types,
     analyse_best_worst
 )
-
+from utils_benchmark import *
+import matplotlib.pyplot as plt
 
 def main():
     CHEMIN_SUMMARY = r"data/survey/summary.csv"
@@ -18,7 +19,7 @@ def main():
     CHEMIN_PERSONNES = r"data/survey/data-personnes.csv"
     CHEMIN_DATAPHOTO = r"data/survey/data-photos.csv"
     CHEMIN_BEST_WORST = r"data/survey/data-all.csv"
-    DOSSIER_IMAGES = r"outputs/model_results/trees/"
+    DOSSIER_IMAGES = r"outputs/survey/"
 
 
     print("\n=== 1. Nettoyage et Préparation des Données du Sondage ===")
@@ -40,30 +41,50 @@ def main():
     print("\nImages de synthétisation créées.")
 
 
-    print("\n=== 3. Analyse Best-Worst Scaling ===")
-    try:
-        analyse_best_worst(CHEMIN_BEST_WORST, DOSSIER_IMAGES)
-        print("\nScores Best-Worst générés avec succès.")
-    except FileNotFoundError:
-        raise ValueError(f"Attention: Le fichier {CHEMIN_BEST_WORST} n'a pas été trouvé.")
+    # print("\n=== 3. Analyse Best-Worst Scaling ===")
+    # try:
+    #     analyse_best_worst(CHEMIN_BEST_WORST, DOSSIER_IMAGES)
+    #     print("\nScores Best-Worst générés avec succès.")
+    # except FileNotFoundError:
+    #     raise ValueError(f"Attention: Le fichier {CHEMIN_BEST_WORST} n'a pas été trouvé.")
 
 
-    print("\n=== 4. Régressions linéaires ===")
-    try:
-        execute_regression_mean(CHEMIN_SUMMARY, test_size = 0.2, random_state = 42)
-        execute_regression_all(CHEMIN_DATABASE, CHEMIN_PERSONNES, CHEMIN_DATAPHOTO, test_size = 0.2, random_state = 42)
-        print("\nRégressions linéaires terminées.")
-    except FileNotFoundError:
-        raise ValueError(f"Attention: Le fichier {CHEMIN_SUMMARY} n'a pas été trouvé.")
+def main2():
+    base_path = "data/survey/data-base.csv"
+    personnes_path = "data/survey/data-personnes.csv"
+    photos_path = "data/survey/data-photos.csv"
 
-    print("\n=== 5. Arbres ===")
-    execute_regression_tree_mean(CHEMIN_SUMMARY, DOSSIER_IMAGES, test_size = 0.2, random_state = 42)
-    execute_regression_tree_all(CHEMIN_DATABASE, CHEMIN_PERSONNES, CHEMIN_DATAPHOTO, DOSSIER_IMAGES, test_size = 0.2, random_state = 42, depth = None)
-    execute_random_forest(CHEMIN_DATABASE, CHEMIN_PERSONNES, CHEMIN_DATAPHOTO, max_depth = 8, min_samples_leaf=20)
-    print("\n=== 6. Ordered Models ===")
-    execute_ordered_model(CHEMIN_DATABASE, CHEMIN_PERSONNES, CHEMIN_DATAPHOTO, test_size = 0.2, random_state = 42,
-                          distr='logit')
-    execute_ordered_model(CHEMIN_DATABASE, CHEMIN_PERSONNES, CHEMIN_DATAPHOTO, test_size=0.2, random_state=42,
-                          distr='probit')
+    df_all = import_and_merge_data_base(base_path, personnes_path, photos_path)
+    df_all = df_all[df_all['job'] == 6]
+    df = df_all[df_all['postal_code'].between(69000, 70000, inclusive='neither')]
+
+    # Compter le nombre de lignes par note
+    note_counts = df['note'].value_counts().sort_index()
+
+    fig, ax_hist = plt.subplots()
+    cmap = plt.get_cmap('Spectral')
+    num_categories = len(note_counts)
+
+    colors = [cmap(i / max(1, num_categories - 1)) for i in range(num_categories)]
+
+    bars = ax_hist.bar(
+        note_counts.index.astype(str),
+        note_counts.values,
+        color=colors,
+        edgecolor='black',
+        linewidth=0.5
+    )
+    ax_hist.bar_label(bars, padding=3, fmt='%d')  # '%d' pour afficher un entier
+
+    ax_hist.grid(axis='y', linestyle='--', alpha=0.7)
+    ax_hist.set_xlabel("Note")
+    ax_hist.set_ylabel("Nombre")
+
+    ax_hist.spines['top'].set_visible(False)
+    ax_hist.spines['right'].set_visible(False)
+
+    plt.title("Distribution of given notes")
+    # plt.show()
+    plt.savefig("outputs/survey/ditrib_notes.png", dpi=300)
 if __name__ == "__main__":
-    main()
+    main2()
