@@ -109,15 +109,20 @@ def _split_data(X, y, train_idx, test_idx):
 
 def get_models_ML():
     return {
-        "Classification Tree": DecisionTreeClassifier(random_state=RANDOM_STATE),
-        "Gradient Boost": GradientBoostingClassifier(random_state=RANDOM_STATE, learning_rate=0.2,
-                                                     max_depth=5, min_samples_split=2,
-                                                     min_samples_leaf=1, n_estimators=500,
-                                                     subsample=0.8),
-        "HistGradient Boost": HistGradientBoostingClassifier(random_state=RANDOM_STATE, l2_regularization=0.5, learning_rate=0.1, max_depth=5 ,max_iter=15, max_leaf_nodes=7),
-        "Random Forest": RandomForestClassifier(random_state=RANDOM_STATE),
-        "Ada Boost": AdaBoostClassifier(random_state=RANDOM_STATE),
-        "ExtraTrees": ExtraTreesClassifier(random_state=RANDOM_STATE, max_depth=5)
+        "Classification Tree": DecisionTreeClassifier(random_state=RANDOM_STATE, max_depth=3, min_samples_leaf=4, min_samples_split=3),
+        "Gradient Boost": GradientBoostingClassifier(learning_rate=np.float64(0.1416204436112984),
+                           max_depth=1, n_estimators=244, random_state=RANDOM_STATE,
+                           subsample=np.float64(0.7806957903925775)),
+        "HistGradient Boost": HistGradientBoostingClassifier(l2_regularization=np.float64(0.8960912999234932),
+                               learning_rate=np.float64(0.07360069499437277),
+                               max_depth=1, max_iter=178, max_leaf_nodes=7,
+                               random_state=RANDOM_STATE),
+        "Random Forest": RandomForestClassifier(max_depth=11, min_samples_leaf=8, min_samples_split=6,
+                       n_estimators=70, random_state=RANDOM_STATE),
+        "Ada Boost": AdaBoostClassifier(learning_rate=np.float64(0.818120379564417),
+                   n_estimators=234, random_state=RANDOM_STATE),
+        "ExtraTrees": ExtraTreesClassifier(max_depth=7, min_samples_leaf=4, min_samples_split=6,
+                     n_estimators=64, random_state=RANDOM_STATE)
     }
 
 

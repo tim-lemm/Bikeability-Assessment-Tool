@@ -241,10 +241,10 @@ def run_shap_on_loaded_models():
                 print(f"Erreur lors de l'analyse SHAP pour {filename} : {e}")
 
 if __name__ == "__main__":
-    # main()
+    main()
     # results_summary = opti_randomized(n_iter=2000)
     # results_summary = pd.DataFrame(results_summary)
     # results_summary.to_csv(os.path.join(output_dir, "results_summary.csv"))
 
-    run_shap_on_loaded_models()
+    # run_shap_on_loaded_models()
     # save_models()
