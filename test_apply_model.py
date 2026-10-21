@@ -99,15 +99,15 @@ gdf_routes_comparaison = gdf_routes_comparaison[['geometry', 'cleabs',"type","sp
 gdf_routes_comparaison[note_columns]=gdf_routes_comparaison[note_columns].astype(int)
 
 gdf_routes_comparaison['ada-raf']=gdf_routes_comparaison["note_ada_boost_optimized"]-gdf_routes_comparaison["note_random_forest_optimized"]
-
+gdf_routes_comparaison['GB-ET']=gdf_routes_comparaison["note_gradient_boost_optimized"]-gdf_routes_comparaison["note_extratrees_optimized"]
 fig, (ax_map, ax_hist) = plt.subplots(2, 1, figsize=(7, 10), gridspec_kw={'height_ratios': [3, 1]})
 fig.set_dpi(600)
-fig.suptitle("Comparaison Ada - RAF")
+fig.suptitle("Comparaison GB - ET")
 
-gdf_routes_comparaison.plot(column="ada-raf",categorical=True, legend=True, cmap="Spectral", ax=ax_map)
+gdf_routes_comparaison.plot(column="GB-ET",categorical=True, legend=True, cmap="Spectral", ax=ax_map)
 ax_map.set_axis_off()
 
-note_counts = gdf_routes_comparaison['ada-raf'].value_counts().sort_index()
+note_counts = gdf_routes_comparaison['GB-ET'].value_counts().sort_index()
 
 cmap = plt.get_cmap('Spectral')
 num_categories = len(note_counts)
@@ -126,5 +126,5 @@ ax_hist.spines['top'].set_visible(False)
 ax_hist.spines['right'].set_visible(False)
 
 plt.tight_layout()
-plt.savefig(f"outputs/maps/map_ada-raf.png", dpi=600)
+plt.savefig(f"outputs/maps/map_GB-ET.png", dpi=600)
 # plt.show()
