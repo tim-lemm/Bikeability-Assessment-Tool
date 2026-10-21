@@ -5,8 +5,8 @@ from sklearn.preprocessing import OneHotEncoder
 import pandas as pd
 import numpy as np
 
-def load_model(model_name):
-    return joblib.load(f"data/models/{model_name}.joblib")
+def load_model(model_name, filepath):
+    return joblib.load(f"{filepath}/{model_name}.joblib")
 
 def convert_df(edge_df):
     edge_df_for_predicition = edge_df.copy()
@@ -23,7 +23,7 @@ def convert_df(edge_df):
     edge_df_for_predicition["type"] = edge_df_for_predicition["type"].map(type_mapping)
 
     edge_df_for_predicition["speed"] = pd.cut(edge_df_for_predicition["speed"],
-                                              bins = [-np.inf,10,15,25,np.inf],
+                                              bins = [-np.inf,1,30,40,np.inf],
                                               labels = [0,1,2,3]).fillna(0).astype(int)
 
     edge_df_for_predicition["slope"] = pd.cut(edge_df_for_predicition["slope"],
@@ -31,11 +31,11 @@ def convert_df(edge_df):
                                               labels = [0,1,2]).astype(int)
 
     edge_df_for_predicition["green"] = pd.cut(edge_df_for_predicition["green"],
-                                              bins=[-np.inf, 5, 75, np.inf],
+                                              bins=[-np.inf, 1, 90, np.inf],
                                               labels=[0, 1, 2]).astype(int)
 
     edge_df_for_predicition["nbr_lane"] = pd.cut(edge_df_for_predicition["nbr_lane"],
-                                              bins=[-np.inf, 1, 2, 4, np.inf],
+                                              bins=[-np.inf, 1, 2, 3, np.inf],
                                               labels=[0, 1, 2, 3]).fillna(0).astype(int)
 
     return edge_df_for_predicition
@@ -59,14 +59,13 @@ def preprocess_data(edge_df):
     X = edge_df_for_predicition[liste_cat].copy()
     return X
 
-def predict_notes(edge_df, model_name):
-    model = load_model(model_name)
+def predict_notes(edge_df, model):
     edge_df_for_predicition = preprocess_data(edge_df)
     prediction = model.predict(edge_df_for_predicition)
     return prediction
 
-def apply_bi_model(edge_df, model_name):
-    edge_df["note"] = predict_notes(edge_df, model_name)
+def apply_bi_model(edge_df, model):
+    edge_df["note"] = predict_notes(edge_df, model)
     edge_df["note"] = edge_df["note"] + 1
     return edge_df
 

@@ -5,7 +5,7 @@ import arviz as az
 import xarray as xr
 import seaborn as sns
 from matplotlib import pyplot as plt
-from scipy.stats import mode
+from scipy.stats import mode, randint, uniform
 import joblib
 import shap
 
@@ -17,7 +17,7 @@ from sklearn.model_selection import (
 from sklearn.metrics import (
     accuracy_score, mean_absolute_error, precision_score,
     confusion_matrix, balanced_accuracy_score, recall_score,
-    f1_score, cohen_kappa_score, classification_report
+    f1_score, cohen_kappa_score, classification_report, ConfusionMatrixDisplay
 )
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import (
@@ -40,6 +40,7 @@ def load_and_preprocess_data(base_path, personnes_path, photos_path, drop="first
     df_all = import_and_merge_data_base(base_path, personnes_path, photos_path)
     df_all = df_all[df_all['job']==6]
     df = df_all[df_all['postal_code'].between(69000, 70000, inclusive='neither')]
+
     df['id_personne'] = df['id_personne'].astype('category').cat.codes
     df['id_photo'] = df['id_photo'].astype('category').cat.codes
     # cat_cols = ['age', 'gender', 'job', 'electric_bike', 'speed', 'slope', 'green', 'type',
@@ -109,22 +110,57 @@ def _split_data(X, y, train_idx, test_idx):
 
 def get_models_ML():
     return {
-        "Classification Tree": DecisionTreeClassifier(random_state=RANDOM_STATE, max_depth=3, min_samples_leaf=4, min_samples_split=3),
-        "Gradient Boost": GradientBoostingClassifier(learning_rate=np.float64(0.1416204436112984),
-                           max_depth=1,#???
-                                                     n_estimators=244, random_state=RANDOM_STATE,
-                           subsample=np.float64(0.7806957903925775)),
-        "HistGradient Boost": HistGradientBoostingClassifier(l2_regularization=np.float64(0.8960912999234932),
-                               learning_rate=np.float64(0.07360069499437277),
-                               max_depth=1,#???
-                                                             max_iter=178, max_leaf_nodes=7,
-                               random_state=RANDOM_STATE),
-        "Random Forest": RandomForestClassifier(max_depth=11, min_samples_leaf=8, min_samples_split=6,
-                       n_estimators=70, random_state=RANDOM_STATE),
-        "Ada Boost": AdaBoostClassifier(learning_rate=np.float64(0.818120379564417),
-                   n_estimators=234, random_state=RANDOM_STATE),
-        "ExtraTrees": ExtraTreesClassifier(max_depth=7, min_samples_leaf=4, min_samples_split=6,
-                     n_estimators=64, random_state=RANDOM_STATE)
+        "Classification Tree": {
+            "model": DecisionTreeClassifier(random_state=RANDOM_STATE),
+            "params": {
+                "max_depth": randint(1, 20),
+                "min_samples_split": randint(2, 10),
+                "min_samples_leaf": randint(1, 10),
+            },
+        },
+        "Gradient Boost": {
+            "model": GradientBoostingClassifier(random_state=RANDOM_STATE),
+            "params": {
+                "n_estimators": randint(50, 300),
+                "learning_rate": uniform(0.01, 0.2),
+                "max_depth": randint(1, 20),
+                "subsample": uniform(0.6, 0.4),
+            },
+        },
+        "HistGradient Boost": {
+            "model": HistGradientBoostingClassifier(random_state=RANDOM_STATE),
+            "params": {
+                "learning_rate": uniform(0.01, 0.2),
+                "max_iter": randint(50, 300),
+                "max_depth": randint(1, 20),
+                "l2_regularization": uniform(0.0, 1.0),
+            },
+        },
+        "Random Forest": {
+            "model": RandomForestClassifier(random_state=RANDOM_STATE, n_jobs=-1),
+            "params": {
+                "n_estimators": randint(50, 300),
+                "max_depth": randint(1, 20),
+                "min_samples_split": randint(2, 10),
+                "min_samples_leaf": randint(1, 10),
+            },
+        },
+        "Ada Boost": {
+            "model": AdaBoostClassifier(random_state=RANDOM_STATE),
+            "params": {
+                "n_estimators": randint(50, 300),
+                "learning_rate": uniform(0.01, 1.0),
+            },
+        },
+        "ExtraTrees": {
+            "model": ExtraTreesClassifier(random_state=RANDOM_STATE, n_jobs=-1),
+            "params": {
+                "n_estimators": randint(50, 300),
+                "max_depth": randint(1, 20),
+                "min_samples_split": randint(2, 10),
+                "min_samples_leaf": randint(1, 10),
+            },
+        },
     }
 
 
@@ -943,3 +979,28 @@ def run_shap_analysis(X, y, model_name="HistGradient Boost"):
         plt.show()
 
     print(f"-> Graphique beeswarm sauvegardé dans : {save_path}")
+
+def plot_all_confusion_matrices(models_dict, X_test, y_test, output_dir="", save=False):
+  n_models = len(models_dict)
+  cols = 3
+  rows = (n_models + cols - 1) // cols
+
+  fig, axes = plt.subplots(rows, cols, figsize=(cols * 5, rows * 4))
+  axes = axes.flatten()
+
+  for i, (name, model) in enumerate(models_dict.items()):
+    ax = axes[i]
+    ConfusionMatrixDisplay.from_estimator(
+        model, X_test, y_test, ax=ax, cmap="Greens", colorbar=False
+    )
+    ax.set_title(name)
+
+  for j in range(i + 1, len(axes)):
+    fig.delaxes(axes[j])
+
+  plt.tight_layout()
+  if save:
+    plot_path = os.path.join(output_dir, "confusion_matrices.png")
+    plt.savefig(plot_path)
+    print(f" Matrices de confusion sauvegardées dans : {plot_path}")
+  plt.show()
