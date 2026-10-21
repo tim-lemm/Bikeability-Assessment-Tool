@@ -3,7 +3,7 @@ from matplotlib import pyplot as plt
 from pytensor.tensor.random import categorical
 from utils_model_handeling import apply_bi_model
 from pathlib import Path
-
+import os
 mapping_infra = {
     "Pas d'aménagement cyclable":0,
     "Chaussée partagée aménagée":1,
@@ -36,9 +36,12 @@ gdf_routes["slope"] = gdf_routes["pente_2"]
 gdf_routes_clean = gdf_routes.dropna(subset = ["type","speed","green","nbr_lane","slope"])
 
 #model application
-model_filepath = Path("data/models")
-list_model_name = [f.name for f in model_filepath.iterdir() if f.is_file()]
-list_model_name = [Path(f).stem for f in list_model_name]
+model_filepath = Path("outputs/model_results/models/")
+list_model_name = [
+    f.replace(".joblib", "")
+    for f in os.listdir(model_filepath)
+    if f.endswith(".joblib") and not f.startswith(".")
+]
 dict_notes={}
 
 for model_name in list_model_name:
@@ -88,18 +91,11 @@ gdf_routes_all_notes.to_csv("outputs/maps/gdf_routes_all_notes.csv")
 
 # gdf_routes_all_notes = gpd.read_file("outputs/maps/gdf_routes_all_notes.csv")
 # plot maps comparaison Ada - RAF
-note_columns = ['note_ada_boost_optimized', "note_classification_tree_optimized", "note_extratrees_optimized",
-                                                 "note_gradient_boost_optimized", "note_histgradient_boost_optimized", "note_random_forest_optimized"]
+
 gdf_routes_comparaison = gdf_routes_all_notes.copy()
-gdf_routes_comparaison = gdf_routes_comparaison[['geometry', 'cleabs',"type","speed","green","nbr_lane","slope",
-                                                 'nom_collaboratif_gauche', 'nom_collaboratif_droite',
-                                                 ] + note_columns]
 
-
-gdf_routes_comparaison[note_columns]=gdf_routes_comparaison[note_columns].astype(int)
-
-gdf_routes_comparaison['ada-raf']=gdf_routes_comparaison["note_ada_boost_optimized"]-gdf_routes_comparaison["note_random_forest_optimized"]
-gdf_routes_comparaison['GB-ET']=gdf_routes_comparaison["note_gradient_boost_optimized"]-gdf_routes_comparaison["note_extratrees_optimized"]
+gdf_routes_comparaison['ada-raf']=gdf_routes_comparaison["note_ada_boost"]-gdf_routes_comparaison["note_random_forest"]
+gdf_routes_comparaison['GB-ET']=gdf_routes_comparaison["note_gradient_boost"]-gdf_routes_comparaison["note_extratrees"]
 fig, (ax_map, ax_hist) = plt.subplots(2, 1, figsize=(7, 10), gridspec_kw={'height_ratios': [3, 1]})
 fig.set_dpi(600)
 fig.suptitle("Comparaison GB - ET")
