@@ -4,11 +4,12 @@ from sklearn.model_selection import RandomizedSearchCV, StratifiedShuffleSplit
 # Global Variables
 n_splits = 5
 save = True
-output_dir = "outputs/model_results_all/"
+output_dir = "outputs/model_results/"
 base_csv = "data/survey/data-base.csv"
 personnes_csv = "data/survey/data-personnes.csv"
 photos_csv = "data/survey/data-photos.csv"
 os.makedirs(output_dir, exist_ok=True)
+os.makedirs(output_dir + "/models/", exist_ok=True)
 
 
 X, y, df, dims, coords = load_and_prepare_data(base_csv, personnes_csv, photos_csv)
@@ -17,7 +18,7 @@ X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=RANDOM_STATE, stratify=y
 )
 
-cv = StratifiedShuffleSplit(n_splits=n_splits, test_size=0.20, random_state=RANDOM_STATE)
+cv = StratifiedShuffleSplit(n_splits=n_splits, test_size=0.2, random_state=RANDOM_STATE)
 
 models_config = get_models_ML()
 
