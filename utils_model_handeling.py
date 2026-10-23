@@ -15,15 +15,15 @@ def convert_df(edge_df):
                                                                       "green_overlap_percentage": "green",
                                                                       "nbr_car_lane": "nbr_lane"})
 
-    type_mapping = {"None" : 0,
-                    "bike_lane" : 1,
-                    "green_lane" : 2,
-                    "bike_path" : 3}
+    type_mapping = {"Pas d'aménagement cyclable" : 0, "Pas d\'aménagement cyclable":0,
+                    "Chaussée partagée aménagée" : 1,
+                    "Aménagement séparé partagé" : 2,
+                    "Aménagement séparé non partagé" : 3}
 
-    edge_df_for_predicition["type"] = edge_df_for_predicition["type"].map(type_mapping)
+    edge_df_for_predicition["nom_amenagement"] = edge_df_for_predicition["type"].map(type_mapping)
 
     edge_df_for_predicition["speed"] = pd.cut(edge_df_for_predicition["speed"],
-                                              bins = [-np.inf,1,30,40,np.inf],
+                                              bins = [-np.inf,1,10,20,np.inf],
                                               labels = [0,1,2,3]).fillna(0).astype(int)
 
     edge_df_for_predicition["slope"] = pd.cut(edge_df_for_predicition["slope"],
@@ -31,7 +31,7 @@ def convert_df(edge_df):
                                               labels = [0,1,2]).astype(int)
 
     edge_df_for_predicition["green"] = pd.cut(edge_df_for_predicition["green"],
-                                              bins=[-np.inf, 1, 90, np.inf],
+                                              bins=[-np.inf, 15, 75, np.inf],
                                               labels=[0, 1, 2]).astype(int)
 
     edge_df_for_predicition["nbr_lane"] = pd.cut(edge_df_for_predicition["nbr_lane"],

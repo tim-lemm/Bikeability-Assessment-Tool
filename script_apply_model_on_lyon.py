@@ -82,7 +82,7 @@ for model_name in list_model_name:
     plt.tight_layout()
     plt.show()
     # plt.savefig(f"outputs/maps/map_{model_name}.png", dpi=600)
-    # plt.close(fig)
+    plt.close(fig)
 
     m = gdf_routes_with_notes.explore(column="note")
     m.save(f"outputs/maps/map_{model_name}.html")
@@ -94,7 +94,7 @@ for model_name, notes in dict_notes.items():
 gdf_routes_all_notes.to_csv("outputs/maps/gdf_routes_all_notes.csv")
 
 gdf_routes_comparaison = gdf_routes_all_notes.copy()
-gdf_routes_comparaison['GB-ET'] = gdf_routes_comparaison["note_gradient_boost"] - gdf_routes_comparaison["note_extratrees"]
+gdf_routes_comparaison['GB-ET'] = gdf_routes_comparaison["note_gradient_boost"] - gdf_routes_comparaison["note_ada_boost"]
 gdf_routes_comparaison['length'] = gdf_routes_comparaison.geometry.length
 
 
@@ -102,7 +102,7 @@ gdf_routes_comparaison['length'] = gdf_routes_comparaison.geometry.length
 # Comparaison maps
 fig, (ax_map, ax_hist) = plt.subplots(2, 1, figsize=(8, 11), gridspec_kw={'height_ratios': [3, 1]})
 fig.set_dpi(600)
-fig.suptitle("Comparaison GB - ET")
+fig.suptitle("Comparaison GB - ADA")
 
 diff_notes = sorted(gdf_routes_comparaison['GB-ET'].dropna().unique())
 gdf_routes_comparaison['GB-ET'] = pd.Categorical(gdf_routes_comparaison['GB-ET'], categories=diff_notes)
@@ -128,7 +128,7 @@ ax_hist2.set_ylabel("Total Length", color='gray')
 
 ax_hist.set_xticks(x_diff)
 ax_hist.set_xticklabels([str(n) for n in diff_notes])
-ax_hist.set_xlabel("Difference (GB - ET)")
+ax_hist.set_xlabel("Difference (GB - ADA)")
 ax_hist.grid(axis='y', linestyle='--', alpha=0.7)
 
 ax_hist.spines['top'].set_visible(False)

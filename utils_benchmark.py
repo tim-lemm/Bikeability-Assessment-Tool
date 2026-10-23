@@ -38,9 +38,9 @@ from config import *
 
 def load_and_preprocess_data(base_path, personnes_path, photos_path, drop="first"):
     df_all = import_and_merge_data_base(base_path, personnes_path, photos_path)
-    df_all = df_all[df_all['job']==6]
-    df = df_all[df_all['postal_code'].between(69000, 70000, inclusive='neither')]
-
+    # df_all = df_all[df_all['job']==6]
+    # df = df_all[df_all['postal_code'].between(69000, 70000, inclusive='neither')]
+    df = df_all.copy()
     df['id_personne'] = df['id_personne'].astype('category').cat.codes
     df['id_photo'] = df['id_photo'].astype('category').cat.codes
     # cat_cols = ['age', 'gender', 'job', 'electric_bike', 'speed', 'slope', 'green', 'type',

@@ -4,7 +4,7 @@ from sklearn.model_selection import RandomizedSearchCV, StratifiedShuffleSplit
 # Global Variables
 n_splits = 5
 save = True
-output_dir = "outputs/model_results/"
+output_dir = "outputs/model_results_all/"
 base_csv = "data/survey/data-base.csv"
 personnes_csv = "data/survey/data-personnes.csv"
 photos_csv = "data/survey/data-photos.csv"
@@ -32,7 +32,7 @@ for name, config in models_config.items():
   search = RandomizedSearchCV(
       estimator=config["model"],
       param_distributions=config["params"],
-      n_iter=1,
+      n_iter=1000,
       cv=cv,
       scoring="balanced_accuracy",
       random_state=RANDOM_STATE,
