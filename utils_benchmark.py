@@ -29,66 +29,38 @@ from config import *
 # 1. DATA PREPARATION
 # ==========================================
 
-def load_and_preprocess_data(base_path, personnes_path, photos_path, drop="first"):
+def load_and_preprocess_data(base_path, personnes_path, photos_path, drop="first", people=False):
     df_all = import_and_merge_data_base(base_path, personnes_path, photos_path)
     df_all = df_all[df_all['job']==6]
     df_all = df_all[df_all['postal_code'].between(69000, 70000, inclusive='neither')]
     df = df_all.copy()
     df['id_personne'] = df['id_personne'].astype('category').cat.codes
     df['id_photo'] = df['id_photo'].astype('category').cat.codes
-    # cat_cols = ['age', 'gender', 'job', 'electric_bike', 'speed', 'slope', 'green', 'type',
-    #             'bike_use_frequency', 'bike_ownership', 'nbr_lane']
-    cat_cols = ['age', 'gender', 'electric_bike', 'speed', 'slope', 'green', 'type',
-                       'bike_use_frequency', 'bike_ownership', 'nbr_lane']
+    if people:
+        cat_cols = ['age', 'gender', 'electric_bike', 'speed', 'slope', 'green', 'type',
+                'bike_use_frequency', 'bike_ownership', 'nbr_lane']
+    else:
+        cat_cols = ['speed', 'slope', 'green', 'type', 'nbr_lane']
+
     encoder_cat = OneHotEncoder(dtype=np.int64, drop=drop)
     enc_output = encoder_cat.fit_transform(df[cat_cols]).toarray()
     encoded_cols = encoder_cat.get_feature_names_out(cat_cols)
+
     df_enc = pd.DataFrame(enc_output, columns=encoded_cols, index=df.index)
     df_enc['id_personne'] = df['id_personne']
     df_enc['id_photo'] = df['id_photo']
-
     df_enc['note'] = df['note'].values - 1
 
-    cat_counts = {col: len(cats) for col, cats in zip(cat_cols, encoder_cat.categories_)}
-
-    dims = {
-        "n_personne": df_enc["id_personne"].nunique(),
-        "n_genders": cat_counts["gender"],
-        "n_bike_use_frequency": cat_counts["bike_use_frequency"],
-        "n_ages": cat_counts["age"],
-        # "n_jobs": cat_counts["job"],
-        "n_bike_ownership": cat_counts["bike_ownership"],
-        "n_electric_bikes": cat_counts["electric_bike"],
-        "n_photos": df_enc["id_photo"].nunique(),
-        "n_types": cat_counts["type"],
-        "n_speeds": cat_counts["speed"],
-        "n_nbr_lanes": cat_counts["nbr_lane"],
-        "n_slopes": cat_counts["slope"],
-        "n_greens": cat_counts["green"],
-        "n_notes": 5
-    }
-
-    coords = {
-        "categories_separation": list(encoder_cat.categories_[2]),
-        "categories_gender": list(encoder_cat.categories_[3])
-    }
-
-    return df_enc, dims, coords
+    return df_enc, encoded_cols
 
 
-def load_and_prepare_data(base_csv, personnes_csv, photos_csv):
-    df, _, _ = load_and_preprocess_data(base_csv, personnes_csv, photos_csv, drop=None)
+def load_and_prepare_data(base_csv, personnes_csv, photos_csv, people = False):
+    df, encoded_cols= load_and_preprocess_data(base_csv, personnes_csv, photos_csv, drop=None, people = people)
 
-    liste_cat = [f"nbr_lane_{i}" for i in range(4)] + [f"speed_{i}" for i in range(4)] + \
-                [f"slope_{i}" for i in range(3)] + [f"green_{i}" for i in range(3)] + \
-                [f"type_{i}" for i in range(4)]
-
-    X = df[liste_cat].copy()
+    X = df[encoded_cols].copy()
     y = df["note"].astype(int)
 
-    df, dims, coords = load_and_preprocess_data(base_csv, personnes_csv, photos_csv, drop="first")
-
-    return X, y, df, dims, coords
+    return X, y
 
 # ==========================================
 # MODEL CONSTRUCTION

@@ -1,10 +1,11 @@
 from utils_benchmark import *
 from sklearn.model_selection import RandomizedSearchCV, StratifiedShuffleSplit
+import joblib
 
 # Global Variables
 n_splits = 5
 save = True
-output_dir = "outputs/model_results/"
+output_dir = "outputs/photo_people/model_results/"
 base_csv = "data/survey/data-base.csv"
 personnes_csv = "data/survey/data-personnes.csv"
 photos_csv = "data/survey/data-photos.csv"
@@ -12,7 +13,7 @@ os.makedirs(output_dir, exist_ok=True)
 os.makedirs(output_dir + "/models/", exist_ok=True)
 
 
-X, y, df, dims, coords = load_and_prepare_data(base_csv, personnes_csv, photos_csv)
+X, y = load_and_prepare_data(base_csv, personnes_csv, photos_csv, people=True)
 
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=RANDOM_STATE, stratify=y
