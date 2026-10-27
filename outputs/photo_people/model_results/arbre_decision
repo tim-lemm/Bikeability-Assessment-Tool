@@ -1,0 +1,33 @@
+digraph Tree {
+node [shape=box, style="filled, rounded", color="black", fontname="helvetica"] ;
+edge [fontname="helvetica"] ;
+0 [label=<speed_0 = 0<br/>gini = 0.78<br/>samples = 1604<br/>value = [141.0, 297.0, 412.0, 418.0, 336.0]>, fillcolor="#fefeff"] ;
+1 [label=<type_0 = 0<br/>gini = 0.74<br/>samples = 938<br/>value = [132, 262, 330, 182, 32]>, fillcolor="#ebfcf9"] ;
+0 -> 1 [labeldistance=2.5, labelangle=45, headlabel="True"] ;
+2 [label=<bike_use_frequency_4 = 0<br/>gini = 0.71<br/>samples = 567<br/>value = [33, 134, 234, 141, 25]>, fillcolor="#d4f9f2"] ;
+1 -> 2 ;
+3 [label=<gini = 0.69<br/>samples = 319<br/>value = [18.0, 93.0, 137.0, 63.0, 8.0]>, fillcolor="#d8faf4"] ;
+2 -> 3 ;
+4 [label=<gini = 0.71<br/>samples = 248<br/>value = [15, 41, 97, 78, 17]>, fillcolor="#e9fcf9"] ;
+2 -> 4 ;
+5 [label=<bike_use_frequency_4 = 0<br/>gini = 0.73<br/>samples = 371<br/>value = [99, 128, 96, 41, 7]>, fillcolor="#f1fcea"] ;
+1 -> 5 ;
+6 [label=<gini = 0.7<br/>samples = 206<br/>value = [69.0, 71.0, 54.0, 11.0, 1.0]>, fillcolor="#fdfffc"] ;
+5 -> 6 ;
+7 [label=<gini = 0.75<br/>samples = 165<br/>value = [30.0, 57.0, 42.0, 30.0, 6.0]>, fillcolor="#effce7"] ;
+5 -> 7 ;
+8 [label=<green_1 = 0<br/>gini = 0.65<br/>samples = 666<br/>value = [9, 35, 82, 236, 304]>, fillcolor="#fbe0f5"] ;
+0 -> 8 [labeldistance=2.5, labelangle=-45, headlabel="False"] ;
+9 [label=<bike_use_frequency_1 = 0<br/>gini = 0.69<br/>samples = 382<br/>value = [7.0, 32.0, 60.0, 155.0, 128.0]>, fillcolor="#eaeafc"] ;
+8 -> 9 ;
+10 [label=<gini = 0.69<br/>samples = 338<br/>value = [6, 26, 51, 134, 121]>, fillcolor="#f3f3fd"] ;
+9 -> 10 ;
+11 [label=<gini = 0.69<br/>samples = 44<br/>value = [1, 6, 9, 21, 7]>, fillcolor="#bcbbf6"] ;
+9 -> 11 ;
+12 [label=<bike_ownership_0 = 0<br/>gini = 0.53<br/>samples = 284<br/>value = [2, 3, 22, 81, 176]>, fillcolor="#f3a2e2"] ;
+8 -> 12 ;
+13 [label=<gini = 0.55<br/>samples = 190<br/>value = [2.0, 2.0, 13.0, 62.0, 111.0]>, fillcolor="#f5b3e7"] ;
+12 -> 13 ;
+14 [label=<gini = 0.47<br/>samples = 94<br/>value = [0, 1, 9, 19, 65]>, fillcolor="#ef86d8"] ;
+12 -> 14 ;
+}

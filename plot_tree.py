@@ -1,24 +1,25 @@
 import joblib
-import matplotlib.pyplot as plt
-from sklearn.tree import plot_tree
+from sklearn.tree import export_graphviz
+import graphviz
 
 # 1. Charger le modèle sauvegardé (remplacez par votre chemin de fichier)
-model = joblib.load('outputs/model_results/models/classification_tree_optimized.joblib')
+model = joblib.load("outputs/photo_people/model_results/models/classification_tree.joblib")
 
-# 2. Créer la figure Matplotlib (ajustez la taille selon la complexité de l'arbre)
-plt.figure(figsize=(15, 10), dpi=300)
 
-# 3. Tracer l'arbre
-plot_tree(
+
+# Générer les données au format dot
+dot_data = export_graphviz(
     model,
-    feature_names=  [f"nbr_lane_{i}" for i in range(4)] + [f"speed_{i}" for i in range(4)] + \
-                [f"slope_{i}" for i in range(3)] + [f"green_{i}" for i in range(3)] + \
-                [f"type_{i}" for i in range(4)],
-    filled=True,  # Colore les nœuds selon la pureté/classe dominante
-    rounded=True,  # Arrondit les coins des boîtes
-    precision=2,
-    fontsize=7
+    out_file=None,
+    feature_names=model.feature_names_in_,
+    filled=True,
+    rounded=True,
+    special_characters=True,
+    precision=2
 )
 
-# 4. Afficher le graphique
-plt.show()
+dot_data = dot_data.replace("&le; 0.5", "= 0")
+
+# Afficher ou sauvegarder l'arbre proprement
+graph = graphviz.Source(dot_data)
+graph.render("outputs/photo_people/model_results/arbre_decision", view=True, format="png")
