@@ -3,9 +3,13 @@ import joblib
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
+
 from utils_model_handeling import apply_bi_model
 from pathlib import Path
 import os
+
+
+test = "photo_people"
 
 mapping_infra = {
     "Pas d'aménagement cyclable": 0,
@@ -21,14 +25,35 @@ gdf_routes["green"] = gdf_routes["green_overlap_percent"]
 gdf_routes["nbr_lane"] = gdf_routes["nombre_de_voies"]
 gdf_routes["slope"] = gdf_routes["pente_2"]
 
+
 gdf_routes_clean = gdf_routes.dropna(subset=["type", "speed", "green", "nbr_lane", "slope"])
 
-model_filepath = Path("outputs/model_results/models/")
+model_filepath = Path(f"outputs/{test}/model_results/models/")
 list_model_name = [
     f.replace(".joblib", "")
     for f in os.listdir(model_filepath)
     if f.endswith(".joblib") and not f.startswith(".")
 ]
+
+possible_persona = {"age": [1, 2, 3],
+    "bike_use_frequency": [0, 1, 2, 3, 4],
+    "electric_bike": [True, False],
+    "gender": [0, 1,2],
+    "bike_ownership": [0,1]}
+
+dict_persona = {"age":1,
+                "bike_use_frequency":4,
+                "electric_bike":False,
+                "gender":0,
+                "bike_ownership": 1
+                }
+
+for var, valeurs in possible_persona.items():
+    valeur_cible = dict_persona.get(var)
+
+    for val in valeurs:
+        col_name = f"{var}_{val}"
+        gdf_routes_clean[col_name] = 1 if val == valeur_cible else 0
 
 dict_notes = {}
 for model_name in list_model_name:
@@ -41,7 +66,7 @@ all_notes = [1, 2, 3, 4, 5]
 cmap = plt.get_cmap('Spectral')
 color_mapping = {note_val: cmap(i / max(1, len(all_notes) - 1)) for i, note_val in enumerate(all_notes)}
 
-Path("outputs/maps").mkdir(parents=True, exist_ok=True)
+Path(f"outputs/{test}/maps").mkdir(parents=True, exist_ok=True)
 
 for model_name in list_model_name:
     gdf_routes_with_notes = gdf_routes_clean.copy()
@@ -80,18 +105,18 @@ for model_name in list_model_name:
     ax_hist2.spines['top'].set_visible(False)
 
     plt.tight_layout()
-    plt.show()
-    # plt.savefig(f"outputs/maps/map_{model_name}.png", dpi=600)
+    # plt.show()
+    plt.savefig(f"outputs/{test}/maps/map_{model_name}.png", dpi=600)
     plt.close(fig)
 
     m = gdf_routes_with_notes.explore(column="note")
-    m.save(f"outputs/maps/map_{model_name}.html")
+    m.save(f"outputs/{test}/maps/map_{model_name}.html")
 
 gdf_routes_all_notes = gdf_routes_clean.copy()
 for model_name, notes in dict_notes.items():
     gdf_routes_all_notes[f"note_{model_name}"] = notes
 
-gdf_routes_all_notes.to_csv("outputs/maps/gdf_routes_all_notes.csv")
+gdf_routes_all_notes.to_csv(f"outputs/{test}/maps/gdf_routes_all_notes.csv")
 
 gdf_routes_comparaison = gdf_routes_all_notes.copy()
 gdf_routes_comparaison['GB-ET'] = gdf_routes_comparaison["note_gradient_boost"] - gdf_routes_comparaison["note_ada_boost"]
@@ -135,5 +160,5 @@ ax_hist.spines['top'].set_visible(False)
 ax_hist2.spines['top'].set_visible(False)
 
 plt.tight_layout()
-plt.savefig(f"outputs/maps/map_GB-ET.png", dpi=600)
+plt.savefig(f"outputs/{test}/maps/map_GB-ET.png", dpi=600)
 plt.close(fig)

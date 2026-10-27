@@ -52,16 +52,23 @@ def preprocess_data(edge_df):
         if col not in edge_df_for_predicition.columns:
             edge_df_for_predicition[col]=0
 
+    edge_df_for_predicition[["age_1", "age_2", "age_3", "bike_use_frequency_0","bike_use_frequency_1","bike_use_frequency_2","bike_use_frequency_3","bike_use_frequency_4","electric_bike_True","electric_bike_False","gender_0","gender_1","gender_2","bike_ownership_0", "bike_ownership_1"]] = edge_df[["age_1", "age_2", "age_3", "bike_use_frequency_0","bike_use_frequency_1","bike_use_frequency_2","bike_use_frequency_3","bike_use_frequency_4","electric_bike_True","electric_bike_False","gender_0","gender_1","gender_2","bike_ownership_0", "bike_ownership_1"]]
+    # liste_cat = [f"nbr_lane_{i}" for i in range(4)] + [f"speed_{i}" for i in range(4)] + \
+    #             [f"slope_{i}" for i in range(3)] + [f"green_{i}" for i in range(3)] + \
+    #             [f"type_{i}" for i in range(4)]
+
     liste_cat = [f"nbr_lane_{i}" for i in range(4)] + [f"speed_{i}" for i in range(4)] + \
                 [f"slope_{i}" for i in range(3)] + [f"green_{i}" for i in range(3)] + \
-                [f"type_{i}" for i in range(4)]
-
+                [f"type_{i}" for i in range(4)] + ["age_1", "age_2", "age_3", "bike_use_frequency_0","bike_use_frequency_1","bike_use_frequency_2","bike_use_frequency_3","bike_use_frequency_4","electric_bike_True","electric_bike_False","gender_0","gender_1","gender_2","bike_ownership_0", "bike_ownership_1"]
     X = edge_df_for_predicition[liste_cat].copy()
     return X
 
 def predict_notes(edge_df, model):
+
     edge_df_for_predicition = preprocess_data(edge_df)
-    prediction = model.predict(edge_df_for_predicition)
+    features_ordre = model.feature_names_in_
+    edge_df_reordered = edge_df_for_predicition[features_ordre]
+    prediction = model.predict(edge_df_reordered)
     return prediction
 
 def apply_bi_model(edge_df, model):
