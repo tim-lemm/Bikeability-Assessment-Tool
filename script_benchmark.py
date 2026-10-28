@@ -1,5 +1,6 @@
 from utils_benchmark import *
-from sklearn.model_selection import RandomizedSearchCV, StratifiedShuffleSplit
+from sklearn.model_selection import RandomizedSearchCV, StratifiedShuffleSplit, train_test_split
+from sklearn.metrics import accuracy_score, balanced_accuracy_score, mean_absolute_error, cohen_kappa_score, precision_score
 import joblib
 
 # Global Variables
@@ -82,7 +83,7 @@ print("=" * 300)
 print(results_df.to_string(index=False))
 
 if save:
-  csv_path = os.path.join(output_dir, "benchmark_metrics_summary.csv")
+  csv_path = os.path.join(output_dir, "dummies_metrics_summary.csv")
   results_df = results_df.round(4)
   results_df.to_csv(csv_path, index=False)
   print(f"\n Résultats sauvegardés dans : {csv_path}")

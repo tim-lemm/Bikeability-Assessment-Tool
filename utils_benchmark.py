@@ -1,16 +1,10 @@
 import pandas as pd
 from matplotlib import pyplot as plt
-from scipy.stats import mode, randint, uniform
+from scipy.stats import randint, uniform
 
-from sklearn.preprocessing import OrdinalEncoder, StandardScaler, OneHotEncoder
-from sklearn.model_selection import (
-    train_test_split, LeaveOneOut, StratifiedKFold,
-    StratifiedShuffleSplit, GridSearchCV, ShuffleSplit
-)
+from sklearn.preprocessing import OneHotEncoder
 from sklearn.metrics import (
-    accuracy_score, mean_absolute_error, precision_score,
-    confusion_matrix, balanced_accuracy_score, recall_score,
-    f1_score, cohen_kappa_score, classification_report, ConfusionMatrixDisplay
+    ConfusionMatrixDisplay
 )
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import (
@@ -20,7 +14,7 @@ from sklearn.ensemble import (
     AdaBoostClassifier,
     ExtraTreesClassifier
 )
-
+from sklearn.dummy import DummyClassifier
 from utils_survey_analysis import import_and_merge_data_base
 
 from config import *
@@ -68,57 +62,86 @@ def load_and_prepare_data(base_csv, personnes_csv, photos_csv, people = False):
 
 def get_models_ML():
     return {
-        "Classification Tree": {
-            "model": DecisionTreeClassifier(random_state=RANDOM_STATE),
-            "params": {
-                "max_depth": randint(1, 20),
-                "min_samples_split": randint(2, 10),
-                "min_samples_leaf": randint(1, 10),
-            },
+        "DummyClassifier_0": {
+            "model": DummyClassifier(random_state=RANDOM_STATE, strategy="constant", constant=0),
+            "params": {}
         },
-        "Gradient Boost": {
-            "model": GradientBoostingClassifier(random_state=RANDOM_STATE),
-            "params": {
-                "n_estimators": randint(50, 300),
-                "learning_rate": uniform(0.01, 0.2),
-                "max_depth": randint(1, 20),
-                "subsample": uniform(0.6, 0.4),
-            },
+        "DummyClassifier_1": {
+            "model": DummyClassifier(random_state=RANDOM_STATE, strategy="constant", constant=1),
+            "params": {}
         },
-        "HistGradient Boost": {
-            "model": HistGradientBoostingClassifier(random_state=RANDOM_STATE),
-            "params": {
-                "learning_rate": uniform(0.01, 0.2),
-                "max_iter": randint(50, 300),
-                "max_depth": randint(1, 20),
-                "l2_regularization": uniform(0.0, 1.0),
-            },
+        "DummyClassifier_2": {
+            "model": DummyClassifier(random_state=RANDOM_STATE, strategy="constant", constant=2),
+            "params": {}
         },
-        "Random Forest": {
-            "model": RandomForestClassifier(random_state=RANDOM_STATE, n_jobs=-1),
-            "params": {
-                "n_estimators": randint(50, 300),
-                "max_depth": randint(1, 20),
-                "min_samples_split": randint(2, 10),
-                "min_samples_leaf": randint(1, 10),
-            },
+        "DummyClassifier_3": {
+            "model": DummyClassifier(random_state=RANDOM_STATE, strategy="constant", constant=3),
+            "params": {}
         },
-        "Ada Boost": {
-            "model": AdaBoostClassifier(random_state=RANDOM_STATE),
-            "params": {
-                "n_estimators": randint(50, 300),
-                "learning_rate": uniform(0.01, 1.0),
-            },
+        "DummyClassifier_4": {
+            "model": DummyClassifier(random_state=RANDOM_STATE, strategy="constant", constant=4),
+            "params": {}
         },
-        "ExtraTrees": {
-            "model": ExtraTreesClassifier(random_state=RANDOM_STATE, n_jobs=-1),
-            "params": {
-                "n_estimators": randint(50, 300),
-                "max_depth": randint(1, 20),
-                "min_samples_split": randint(2, 10),
-                "min_samples_leaf": randint(1, 10),
-            },
+        "DummyClassifier_strat": {
+            "model": DummyClassifier(random_state=RANDOM_STATE, strategy="stratified"),
+            "params": {}
         },
+        "DummyClassifier_uniform": {
+            "model": DummyClassifier(random_state=RANDOM_STATE, strategy="uniform"),
+            "params": {}
+        }
+
+        # "Classification Tree": {
+        #     "model": DecisionTreeClassifier(random_state=RANDOM_STATE),
+        #     "params": {
+        #         "max_depth": randint(1, 20),
+        #         "min_samples_split": randint(2, 10),
+        #         "min_samples_leaf": randint(1, 10),
+        #     },
+        # },
+        # "Gradient Boost": {
+        #     "model": GradientBoostingClassifier(random_state=RANDOM_STATE),
+        #     "params": {
+        #         "n_estimators": randint(50, 300),
+        #         "learning_rate": uniform(0.01, 0.2),
+        #         "max_depth": randint(1, 20),
+        #         "subsample": uniform(0.6, 0.4),
+        #     },
+        # },
+        # "HistGradient Boost": {
+        #     "model": HistGradientBoostingClassifier(random_state=RANDOM_STATE),
+        #     "params": {
+        #         "learning_rate": uniform(0.01, 0.2),
+        #         "max_iter": randint(50, 300),
+        #         "max_depth": randint(1, 20),
+        #         "l2_regularization": uniform(0.0, 1.0),
+        #     },
+        # },
+        # "Random Forest": {
+        #     "model": RandomForestClassifier(random_state=RANDOM_STATE, n_jobs=-1),
+        #     "params": {
+        #         "n_estimators": randint(50, 300),
+        #         "max_depth": randint(1, 20),
+        #         "min_samples_split": randint(2, 10),
+        #         "min_samples_leaf": randint(1, 10),
+        #     },
+        # },
+        # "Ada Boost": {
+        #     "model": AdaBoostClassifier(random_state=RANDOM_STATE),
+        #     "params": {
+        #         "n_estimators": randint(50, 300),
+        #         "learning_rate": uniform(0.01, 1.0),
+        #     },
+        # },
+        # "ExtraTrees": {
+        #     "model": ExtraTreesClassifier(random_state=RANDOM_STATE, n_jobs=-1),
+        #     "params": {
+        #         "n_estimators": randint(50, 300),
+        #         "max_depth": randint(1, 20),
+        #         "min_samples_split": randint(2, 10),
+        #         "min_samples_leaf": randint(1, 10),
+        #     },
+        # },
     }
 
 # ==========================================
