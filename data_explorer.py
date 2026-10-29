@@ -9,6 +9,14 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from utils_benchmark import *
 
+# --- CONFIGURATION DES COULEURS DARK MODE (INTERFACE SEULEMENT) ---
+BG_DARK = "#1e1e1e"
+BG_PANEL = "#252526"
+BG_WIDGET = "#2d2d2d"
+FG_TEXT = "#e0e0e0"
+ACCENT_COLOR = "#0e639c"
+BORDER_COLOR = "#3f3f46"
+
 
 class MultiGroupFilterPanel:
     """Représente un panneau de filtres avec sélection multiple par cases à cocher pour chaque variable"""
@@ -123,8 +131,12 @@ class MultiGroupFilterPanel:
 class InteractiveHistogramApp:
     def __init__(self, root, base_csv, personnes_csv, photos_csv=None):
         self.root = root
-        self.root.title("Data Explorer")
+        self.root.title("Data Explorer (Dark Mode + Moyennes)")
         self.root.geometry("1450x980")
+        self.root.configure(bg=BG_DARK)
+
+        # Configuration du style ttk pour le mode sombre de l'interface
+        self.setup_styles()
 
         self.output_dir = os.path.join("outputs", "survey", "data_explorer_output")
         os.makedirs(self.output_dir, exist_ok=True)
@@ -163,6 +175,55 @@ class InteractiveHistogramApp:
 
         self.add_group()
         self.add_group()
+
+    def setup_styles(self):
+        style = ttk.Style()
+        style.theme_use('clam')
+
+        style.configure(".",
+            background=BG_DARK,
+            foreground=FG_TEXT,
+            fieldbackground=BG_WIDGET,
+            troughcolor=BG_PANEL,
+            selectbackground=ACCENT_COLOR,
+            selectforeground="#ffffff"
+        )
+
+        style.configure("TFrame", background=BG_DARK)
+        style.configure("TLabelframe", background=BG_DARK, foreground=FG_TEXT, bordercolor=BORDER_COLOR)
+        style.configure("TLabelframe.Label", background=BG_DARK, foreground=FG_TEXT, font=("Helvetica", 10, "bold"))
+
+        style.configure("TLabel", background=BG_DARK, foreground=FG_TEXT)
+        style.configure("TButton", background="#333333", foreground=FG_TEXT, bordercolor=BORDER_COLOR)
+        style.map("TButton",
+            background=[('active', '#3e3e42'), ('pressed', '#222222')],
+            foreground=[('active', '#ffffff')]
+        )
+
+        style.configure("TCheckbutton", background=BG_DARK, foreground=FG_TEXT)
+        style.map("TCheckbutton",
+            background=[('active', BG_DARK)],
+            foreground=[('active', FG_TEXT)]
+        )
+
+        style.configure("TCombobox", fieldbackground=BG_WIDGET, foreground=FG_TEXT, selectbackground=ACCENT_COLOR)
+
+        # Style pour le Treeview (Tableau de stats)
+        style.configure("Treeview",
+            background="#252526",
+            foreground=FG_TEXT,
+            fieldbackground="#252526",
+            bordercolor=BORDER_COLOR,
+            rowheight=25
+        )
+        style.configure("Treeview.Heading",
+            background="#333333",
+            foreground=FG_TEXT,
+            relief="flat"
+        )
+        style.map("Treeview.Heading",
+            background=[('active', '#3e3e42')]
+        )
 
     def create_widgets(self):
         vertical_pane = ttk.PanedWindow(self.root, orient=tk.VERTICAL)
@@ -226,7 +287,7 @@ class InteractiveHistogramApp:
         canvas_frame = ttk.LabelFrame(left_outer_frame, text=" Groups ", padding=5)
         canvas_frame.pack(fill=tk.BOTH, expand=True, pady=5)
 
-        self.canvas = tk.Canvas(canvas_frame, highlightthickness=0)
+        self.canvas = tk.Canvas(canvas_frame, highlightthickness=0, bg=BG_DARK)
         self.scrollbar = ttk.Scrollbar(canvas_frame, orient="vertical", command=self.canvas.yview)
         self.scrollable_groups_frame = ttk.Frame(self.canvas)
 
@@ -314,7 +375,7 @@ class InteractiveHistogramApp:
         mode_str = "pct" if self.percentage_var.get() else "count"
         trend_str = "_connected" if self.trend_var.get() else ""
         box_str = "_boxplot" if self.boxplot_var.get() else ""
-        photo_str = f"photo_{global_photo}" if global_photo != "Toutes" else "all_photos"
+        photo_str = f"photo_{global_photo}" if global_photo != "All" else "all_photos"
 
         filename = f"hist_{photo_str}_{groups_str}_{mode_str}{trend_str}{box_str}.png"
         file_path = os.path.join(self.output_dir, filename)
@@ -366,7 +427,7 @@ class InteractiveHistogramApp:
                     weights=weights,
                     align='left',
                     rwidth=0.85,
-                    alpha=0.5,
+                    alpha=0.6,
                     label=labels,
                     edgecolor='black'
                 )
@@ -377,13 +438,13 @@ class InteractiveHistogramApp:
                     bins=bins,
                     align='left',
                     rwidth=0.85,
-                    alpha=0.5,
+                    alpha=0.6,
                     label=labels,
                     edgecolor='black'
                 )
                 ax_hist.set_ylabel("Number", fontsize=10)
 
-            # Extraction des couleurs des barres
+            # Extraction des couleurs des barres (couleurs classiques par défaut de Matplotlib)
             if len(data_to_plot) == 1:
                 group_colors = [patches[0].get_facecolor()]
             else:
@@ -403,6 +464,36 @@ class InteractiveHistogramApp:
                         ax_hist.plot(tick_positions, heights, marker='o', linestyle='-', color=color, linewidth=2,
                                      label=f"Trend {labels[i].split(' (')[0]}")
 
+            # --- AJOUT DES LIGNES VERTICALES POUR LES MOYENNES ET LEURS VALEURS ---
+            for i, notes in enumerate(data_to_plot):
+                if len(notes) > 0:
+                    mean_val = notes.mean()
+                    color = group_colors[i]
+                    group_name = labels[i].split(' (')[0]
+
+                    # Ligne verticale en pointillés pour la moyenne
+                    ax_hist.axvline(
+                        x=mean_val,
+                        color=color,
+                        linestyle='--',
+                        linewidth=2,
+                        alpha=0.9,
+                        label=f"Moy. {group_name} = {mean_val:.2f}"
+                    )
+
+                    # Annotation textuelle de la valeur de la moyenne sur le graphique
+                    y_max = ax_hist.get_ylim()[1]
+                    # Décalage vertical étagé pour éviter la superposition des textes si les moyennes sont proches
+                    y_pos = y_max * (0.88 - i * 0.08)
+                    ax_hist.text(
+                        mean_val, y_pos,
+                        f" μ={mean_val:.2f}",
+                        color=color,
+                        fontweight='bold',
+                        fontsize=9,
+                        bbox=dict(boxstyle='round,pad=0.2', facecolor='white', alpha=0.8, edgecolor=color)
+                    )
+
             # Affichage du Box-plot en dessous avec les couleurs correspondantes
             if show_boxplot and ax_box is not None:
                 valid_data = [notes.values for notes in data_to_plot if len(notes) > 0]
@@ -414,6 +505,7 @@ class InteractiveHistogramApp:
                     for patch, color in zip(bp['boxes'], valid_colors):
                         patch.set_facecolor(color)
                         patch.set_alpha(0.6)
+                        patch.set_edgecolor('black')
                     ax_box.set_xlabel("Notes", fontsize=10)
                     ax_box.grid(axis='x', linestyle='--', alpha=0.5)
                     ax_box.tick_params(labelsize=9)
