@@ -83,7 +83,7 @@ print("=" * 300)
 print(results_df.to_string(index=False))
 
 if save:
-  csv_path = os.path.join(output_dir, "dummies_metrics_summary.csv")
+  csv_path = os.path.join(output_dir, "benchmark_metrics_summary.csv")
   results_df = results_df.round(4)
   results_df.to_csv(csv_path, index=False)
   print(f"\n Résultats sauvegardés dans : {csv_path}")
