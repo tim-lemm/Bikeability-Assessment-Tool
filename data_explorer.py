@@ -19,14 +19,14 @@ class MultiGroupFilterPanel:
         self.on_change_callback = on_change_callback
 
         # Cadre principal du groupe
-        self.frame = ttk.LabelFrame(parent_container, text=f" Groupe {group_id} ", padding=8)
+        self.frame = ttk.LabelFrame(parent_container, text=f" Group {group_id} ", padding=8)
         self.frame.pack(fill=tk.X, padx=5, pady=5)
 
         # Nom personnalisable pour la légende du graphique
         name_frame = ttk.Frame(self.frame)
         name_frame.pack(fill=tk.X, pady=2)
         ttk.Label(name_frame, text="Nom :", width=8).pack(side=tk.LEFT)
-        self.name_var = tk.StringVar(value=f"Groupe {group_id}")
+        self.name_var = tk.StringVar(value=f"Group {group_id}")
         self.name_entry = ttk.Entry(name_frame, textvariable=self.name_var, width=20)
         self.name_entry.pack(side=tk.LEFT, padx=5)
         self.name_var.trace_add("write", lambda *args: self.on_change_callback())
@@ -99,11 +99,9 @@ class MultiGroupFilterPanel:
         """Applique les filtres du groupe ainsi que le filtre global de photo basé sur l'ID d'origine"""
         mask = pd.Series(True, index=self.df_complet.index)
 
-        # Filtre global sur la photo (via la colonne originale id_photo de 1 à 17)
-        if global_photo_val != "Toutes":
+        if global_photo_val != "All":
             mask = mask & (self.df_complet['original_id_photo'] == int(global_photo_val))
 
-        # Filtres internes au groupe (cases à cocher)
         for var_name, vals_dict in self.filter_vars.items():
             selected_vals = [val for val, b_var in vals_dict.items() if b_var.get()]
 
@@ -125,14 +123,12 @@ class MultiGroupFilterPanel:
 class InteractiveHistogramApp:
     def __init__(self, root, base_csv, personnes_csv, photos_csv=None):
         self.root = root
-        self.root.title("Comparateur Interactif d'Histogrammes et Statistiques")
-        self.root.geometry("1400x950")
+        self.root.title("Data Explorer")
+        self.root.geometry("1450x980")
 
-        # Dossier par défaut pour les sauvegardes automatiques
         self.output_dir = os.path.join("outputs", "survey", "data_explorer_output")
         os.makedirs(self.output_dir, exist_ok=True)
 
-        # Chargement des données brutes pour récupérer les vrais id_photo (1 à 17)
         try:
             df_all_raw = import_and_merge_data_base(base_csv, personnes_csv, photos_csv)
             df_all_raw = df_all_raw[df_all_raw['job'] == 6]
@@ -141,7 +137,6 @@ class InteractiveHistogramApp:
         except Exception as e:
             original_photo_series = None
 
-        # Chargement des données via la fonction demandée
         try:
             df_enc, encoded_cols = load_and_preprocess_data(base_csv, personnes_csv, photos_csv, drop=None, people=True)
             self.X = df_enc[encoded_cols].copy()
@@ -154,13 +149,11 @@ class InteractiveHistogramApp:
             return
 
         self.df_complet = self.X.copy()
-        self.df_complet['note'] = self.y.values + 1  # Échelle originale des notes
+        self.df_complet['note'] = self.y.values + 1
 
-        # On réassocie les vrais numéros de photos (1 à 17) alignés avec le DataFrame filtré
         if original_photo_series is not None and len(original_photo_series) == len(self.df_complet):
             self.df_complet['original_id_photo'] = original_photo_series.values
         else:
-            # Fallback si les index diffèrent
             self.df_complet['original_id_photo'] = df_all_raw['id_photo'].values[:len(self.df_complet)]
 
         self.groups = []
@@ -168,7 +161,6 @@ class InteractiveHistogramApp:
 
         self.create_widgets()
 
-        # Création par défaut de deux groupes pour démarrer
         self.add_group()
         self.add_group()
 
@@ -176,33 +168,32 @@ class InteractiveHistogramApp:
         vertical_pane = ttk.PanedWindow(self.root, orient=tk.VERTICAL)
         vertical_pane.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-        # --- PARTIE HAUTE : Filtres et Graphique ---
         top_pane = ttk.PanedWindow(vertical_pane, orient=tk.HORIZONTAL)
         vertical_pane.add(top_pane, weight=3)
 
-        # 1. Panneau de gauche : Gestion des groupes et filtres
+        # Panneau de gauche
         left_outer_frame = ttk.Frame(top_pane)
         top_pane.add(left_outer_frame, weight=2)
 
         btn_frame = ttk.Frame(left_outer_frame, padding=5)
         btn_frame.pack(fill=tk.X)
 
-        ttk.Button(btn_frame, text="+ Ajouter un groupe", command=self.add_group).pack(side=tk.LEFT, padx=2)
-        ttk.Button(btn_frame, text="Supprimer le dernier", command=self.remove_group).pack(side=tk.LEFT, padx=2)
-        ttk.Button(btn_frame, text="Réinitialiser tout", command=self.reset_all_groups).pack(side=tk.LEFT, padx=2)
+        ttk.Button(btn_frame, text="+ Add a group", command=self.add_group).pack(side=tk.LEFT, padx=2)
+        ttk.Button(btn_frame, text="Delete last added group", command=self.remove_group).pack(side=tk.LEFT, padx=2)
+        ttk.Button(btn_frame, text="Reset all", command=self.reset_all_groups).pack(side=tk.LEFT, padx=2)
 
-        # --- MENU DÉROULANT GLOBAL POUR LA PHOTO ---
-        photo_frame = ttk.LabelFrame(left_outer_frame, text=" Sélection globale de la photo ", padding=8)
+        # Sélection de la photo
+        photo_frame = ttk.LabelFrame(left_outer_frame, text=" Photo selection ", padding=8)
         photo_frame.pack(fill=tk.X, padx=5, pady=5)
 
         ttk.Label(photo_frame, text="Photo :").pack(side=tk.LEFT, padx=5)
 
-        photo_choices = ["Toutes"]
+        photo_choices = ["All"]
         if 'original_id_photo' in self.df_complet.columns:
             photo_ids = sorted(self.df_complet['original_id_photo'].unique())
             photo_choices += [str(int(p)) for p in photo_ids]
 
-        self.photo_var = tk.StringVar(value="Toutes")
+        self.photo_var = tk.StringVar(value="All")
         self.photo_dropdown = ttk.Combobox(
             photo_frame,
             textvariable=self.photo_var,
@@ -213,24 +204,26 @@ class InteractiveHistogramApp:
         self.photo_dropdown.pack(side=tk.LEFT, padx=5)
         self.photo_dropdown.bind("<<ComboboxSelected>>", lambda event: self.update_all())
 
-        # Options (pourcentage et bouton d'enregistrement direct)
-        options_frame = ttk.Frame(left_outer_frame, padding=5)
-        options_frame.pack(fill=tk.X, padx=5)
+        # Options graphiques et bouton Enregistrer
+        options_frame = ttk.LabelFrame(left_outer_frame, text="Options", padding=8)
+        options_frame.pack(fill=tk.X, padx=5, pady=5)
 
         self.percentage_var = tk.BooleanVar(value=False)
-        chk_percentage = ttk.Checkbutton(
-            options_frame,
-            text="Afficher en pourcentage (%)",
-            variable=self.percentage_var,
-            command=self.update_all
-        )
-        chk_percentage.pack(side=tk.LEFT, anchor="w")
+        self.trend_var = tk.BooleanVar(value=False)
+        self.boxplot_var = tk.BooleanVar(value=False)
 
-        btn_save = ttk.Button(options_frame, text="Enregistrer", command=self.save_plot_automatic)
-        btn_save.pack(side=tk.RIGHT, padx=5)
+        ttk.Checkbutton(options_frame, text="Percentage (%)", variable=self.percentage_var,
+                        command=self.update_all).pack(anchor="w", pady=2)
+        ttk.Checkbutton(options_frame, text="Trend line", variable=self.trend_var,
+                        command=self.update_all).pack(anchor="w", pady=2)
+        ttk.Checkbutton(options_frame, text="Box-plot", variable=self.boxplot_var,
+                        command=self.update_all).pack(anchor="w", pady=2)
+
+        btn_save = ttk.Button(options_frame, text="Save plot", command=self.save_plot_automatic)
+        btn_save.pack(anchor="e", pady=5)
 
         # Zone scrollable pour les filtres
-        canvas_frame = ttk.LabelFrame(left_outer_frame, text=" Groupes de Comparaison ", padding=5)
+        canvas_frame = ttk.LabelFrame(left_outer_frame, text=" Groups ", padding=5)
         canvas_frame.pack(fill=tk.BOTH, expand=True, pady=5)
 
         self.canvas = tk.Canvas(canvas_frame, highlightthickness=0)
@@ -247,26 +240,26 @@ class InteractiveHistogramApp:
         self.canvas.pack(side="left", fill="both", expand=True)
         self.scrollbar.pack(side="right", fill="y")
 
-        # 2. Panneau de droite : Graphique Matplotlib
-        right_frame = ttk.LabelFrame(top_pane, text=" Superposition des Histogrammes ", padding=10)
+        # Panneau de droite : Graphique Matplotlib
+        right_frame = ttk.LabelFrame(top_pane, padding=10)
         top_pane.add(right_frame, weight=3)
 
-        self.fig, self.ax = plt.subplots(figsize=(7, 5))
+        self.fig, self.ax = plt.subplots(figsize=(7, 6))
         self.canvas_matplotlib = FigureCanvasTkAgg(self.fig, master=right_frame)
         self.canvas_matplotlib.get_tk_widget().pack(fill=tk.BOTH, expand=True)
 
-        # --- PARTIE BASSE : Tableau statistique récapitulatif ---
-        bottom_frame = ttk.LabelFrame(vertical_pane, text=" Tableau Statistique Comparatif ", padding=10)
+        # Partie basse : Tableau statistique
+        bottom_frame = ttk.LabelFrame(vertical_pane, text=" Stats ", padding=10)
         vertical_pane.add(bottom_frame, weight=1)
 
-        columns = ("groupe", "count", "mean", "std", "median", "min", "max")
+        columns = ("group", "count", "mean", "std", "median", "min", "max")
         self.stats_table = ttk.Treeview(bottom_frame, columns=columns, show="headings", height=4)
 
-        self.stats_table.heading("groupe", text="Groupe")
-        self.stats_table.heading("count", text="Effectif (n)")
-        self.stats_table.heading("mean", text="Moyenne")
-        self.stats_table.heading("std", text="Écart-type")
-        self.stats_table.heading("median", text="Médiane")
+        self.stats_table.heading("group", text="Group")
+        self.stats_table.heading("count", text="Number (n)")
+        self.stats_table.heading("mean", text="Mean")
+        self.stats_table.heading("std", text="Standard deviation")
+        self.stats_table.heading("median", text="Median")
         self.stats_table.heading("min", text="Min")
         self.stats_table.heading("max", text="Max")
 
@@ -299,7 +292,10 @@ class InteractiveHistogramApp:
             messagebox.showwarning("Attention", "Vous devez conserver au moins un groupe.")
 
     def reset_all_groups(self):
-        self.photo_var.set("Toutes")
+        self.photo_var.set("All")
+        self.percentage_var.set(False)
+        self.trend_var.set(False)
+        self.boxplot_var.set(False)
         for group in self.groups:
             for vals_dict in group.filter_vars.values():
                 for b_var in vals_dict.values():
@@ -316,9 +312,11 @@ class InteractiveHistogramApp:
         groups_str = "_vs_".join(group_names)
 
         mode_str = "pct" if self.percentage_var.get() else "count"
-        photo_str = f"photo_{global_photo}" if global_photo != "Toutes" else "toutes_photos"
+        trend_str = "_connected" if self.trend_var.get() else ""
+        box_str = "_boxplot" if self.boxplot_var.get() else ""
+        photo_str = f"photo_{global_photo}" if global_photo != "Toutes" else "all_photos"
 
-        filename = f"hist_{photo_str}_{groups_str}_{mode_str}.png"
+        filename = f"hist_{photo_str}_{groups_str}_{mode_str}{trend_str}{box_str}.png"
         file_path = os.path.join(self.output_dir, filename)
 
         try:
@@ -329,10 +327,13 @@ class InteractiveHistogramApp:
 
     def update_plot(self):
         self.ax.clear()
+        self.fig.clf()
 
         data_to_plot = []
         labels = []
         is_percentage = self.percentage_var.get()
+        show_trend = self.trend_var.get()
+        show_boxplot = self.boxplot_var.get()
         global_photo = self.photo_var.get()
 
         for group in self.groups:
@@ -346,6 +347,12 @@ class InteractiveHistogramApp:
             max_val = int(all_notes_concat.max())
             bins = range(min_val, max_val + 2)
 
+            if show_boxplot:
+                ax_hist, ax_box = self.fig.subplots(2, 1, sharex=True, gridspec_kw={'height_ratios': [3, 1]})
+            else:
+                ax_hist = self.fig.subplots(1, 1)
+                ax_box = None
+
             weights = []
             if is_percentage:
                 for notes in data_to_plot:
@@ -353,42 +360,79 @@ class InteractiveHistogramApp:
                         weights.append(np.ones(len(notes)) * (100.0 / len(notes)))
                     else:
                         weights.append([])
-                self.ax.hist(
+                n_list, bins_out, patches = ax_hist.hist(
                     data_to_plot,
                     bins=bins,
                     weights=weights,
                     align='left',
                     rwidth=0.85,
-                    alpha=0.6,
+                    alpha=0.5,
                     label=labels,
                     edgecolor='black'
                 )
-                self.ax.set_ylabel("Pourcentage (%)", fontsize=11)
+                ax_hist.set_ylabel("Percentages (%)", fontsize=10)
             else:
-                self.ax.hist(
+                n_list, bins_out, patches = ax_hist.hist(
                     data_to_plot,
                     bins=bins,
                     align='left',
                     rwidth=0.85,
-                    alpha=0.6,
+                    alpha=0.5,
                     label=labels,
                     edgecolor='black'
                 )
-                self.ax.set_ylabel("Nombre d'occurrences", fontsize=11)
+                ax_hist.set_ylabel("Number", fontsize=10)
 
-            photo_title_str = f" (Photo : {global_photo})" if global_photo != "Toutes" else " (Toutes les photos)"
-            self.ax.set_title(f"Comparaison des histogrammes de notes{photo_title_str}", fontsize=12, fontweight='bold')
-            self.ax.set_xlabel("Notes", fontsize=11)
-            self.ax.grid(axis='y', linestyle='--', alpha=0.6)
-            self.ax.legend(loc='upper right', frameon=True)
+            # Extraction des couleurs des barres
+            if len(data_to_plot) == 1:
+                group_colors = [patches[0].get_facecolor()]
+            else:
+                group_colors = [patch_group[0].get_facecolor() for patch_group in patches]
+
+            # Relier les sommets exactement au niveau des ticks de l'abscisse (bins_out[:-1])
+            if show_trend:
+                tick_positions = bins_out[:-1]
+                if len(data_to_plot) == 1:
+                    heights_list = [n_list]
+                else:
+                    heights_list = n_list
+
+                for i, heights in enumerate(heights_list):
+                    if len(data_to_plot[i]) > 0:
+                        color = group_colors[i]
+                        ax_hist.plot(tick_positions, heights, marker='o', linestyle='-', color=color, linewidth=2,
+                                     label=f"Trend {labels[i].split(' (')[0]}")
+
+            # Affichage du Box-plot en dessous avec les couleurs correspondantes
+            if show_boxplot and ax_box is not None:
+                valid_data = [notes.values for notes in data_to_plot if len(notes) > 0]
+                valid_labels = [labels[i].split(' (')[0] for i, notes in enumerate(data_to_plot) if len(notes) > 0]
+                valid_colors = [group_colors[i] for i, notes in enumerate(data_to_plot) if len(notes) > 0]
+
+                if valid_data:
+                    bp = ax_box.boxplot(valid_data, vert=False, tick_labels=valid_labels, patch_artist=True, widths=0.6)
+                    for patch, color in zip(bp['boxes'], valid_colors):
+                        patch.set_facecolor(color)
+                        patch.set_alpha(0.6)
+                    ax_box.set_xlabel("Notes", fontsize=10)
+                    ax_box.grid(axis='x', linestyle='--', alpha=0.5)
+                    ax_box.tick_params(labelsize=9)
+
+            photo_title_str = f" Photo : {global_photo}" if global_photo != "All" else " All photos"
+            ax_hist.set_title(photo_title_str, fontsize=11, fontweight='bold')
+            if not show_boxplot:
+                ax_hist.set_xlabel("Notes", fontsize=10)
+            ax_hist.grid(axis='y', linestyle='--', alpha=0.6)
+            ax_hist.legend(loc='upper right', frameon=True, fontsize=9)
 
             if len(all_notes_concat.unique()) > 0:
-                self.ax.set_xticks(sorted(all_notes_concat.unique()))
+                ax_hist.set_xticks(sorted(all_notes_concat.unique()))
         else:
-            self.ax.text(0.5, 0.5, "Aucune donnée ne correspond\naux filtres sélectionnés",
+            ax_hist = self.fig.add_subplot(111)
+            ax_hist.text(0.5, 0.5, "Aucune donnée ne correspond\naux filtres sélectionnés",
                          horizontalalignment='center', verticalalignment='center',
-                         transform=self.ax.transAxes, fontsize=12, color='red')
-            self.ax.set_title("Comparaison des histogrammes (0 résultat)", fontsize=12, fontweight='bold')
+                         transform=ax_hist.transAxes, fontsize=12, color='red')
+            ax_hist.set_title("Comparaison des histogrammes (0 résultat)", fontsize=11, fontweight='bold')
 
         self.fig.tight_layout()
         self.canvas_matplotlib.draw()
