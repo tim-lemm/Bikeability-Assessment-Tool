@@ -1,85 +1,87 @@
 from stepmix.stepmix import StepMix
-from utils_benchmark import load_and_prepare_data
+from utils_benchmark import load_and_prepare_data, import_and_merge_data_base
 from sklearn.model_selection import GridSearchCV
 from sklearn.preprocessing import OneHotEncoder
-import seaborn as sns
+from sklearn.compose import ColumnTransformer
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.pipeline import Pipeline
 import matplotlib.pyplot as plt
-import statsmodels.api as sm
 import pandas as pd
+from config import *
 
-
+# Data preprocessing
 base_csv = "data/survey/data-base.csv"
 personnes_csv = "data/survey/data-personnes.csv"
 photos_csv = "data/survey/data-photos.csv"
-X, y = load_and_prepare_data(base_csv, personnes_csv, photos_csv, people=True, drop="first")
 
-col_covariate = ['gender_0','gender_1','gender_2','electric_bike_True',
-                  'bike_use_frequency_0','bike_use_frequency_1','bike_use_frequency_2','bike_use_frequency_3',
-                  'bike_use_frequency_4','bike_ownership_1']
-col_predictors = [ 'type_1', 'type_2', 'type_3', 'slope_1','slope_2',"green_1","green_2",
-                  'nbr_lane_1','nbr_lane_2', 'speed_1', 'speed_2', 'speed_3']
+categorical_cols = ["nbr_lane", "speed", "slope", "type", "green", "age", "gender", "job", "bike_use_frequency"]
 
-Y = y.values.reshape(-1, 1)
-Z_cov = X[col_covariate]
+df = import_and_merge_data_base(base_csv, personnes_csv, photos_csv)
+df.drop(["postal_code","type_bike_fold","type_bike_cargo", "type_bike_recumbent", "id_photo", "id_personne", "traffic"], axis=1, inplace=True)
+df["electric_bike"] = df["electric_bike"].astype(int)
 
-# model = StepMix(
-#     n_components=4,
-#     n_steps=3,
-#     measurement="continuous",
-#     structural="covariate",
-#     # verbose=1,
-#     random_state=42
-# )
-#
-#
-# grid = {
-#     'n_components': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-# }
-# gs = GridSearchCV(estimator=model, cv=3, param_grid=grid)
-# gs.fit(Y, Z_cov)
-#
-# results = pd.DataFrame(gs.cv_results_)
-# results["Val. Log Likelihood"] = results['mean_test_score']
-#
-# print(results.to_string())
-#
-# sns.set_style("darkgrid")
-# sns.lineplot(data=results, x='param_n_components', y='Val. Log Likelihood',
-#              hue='param_n_steps', palette='Dark2')
-# plt.show()
 
-model = StepMix(
-    n_components=4,
-    n_steps=3,
-    measurement="binary",
-    structural="covariate",
-    verbose=1,
-    random_state=42
+y = df["note"].copy()
+X = df.drop(["note"], axis=1).copy()
+
+
+
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=RANDOM_STATE, stratify=y)
+
+preprocessor = ColumnTransformer(transformers=[
+    ('cat', OneHotEncoder(drop="first", dtype="int", sparse_output=False), categorical_cols),
+],
+    remainder="passthrough"
+    )
+
+model = Pipeline(steps=[
+    ('preprocessor', preprocessor),
+    ('regressor', LinearRegression()),
+])
+
+model.fit(X_train, y_train)
+
+y_pred = model.predict(X_test)
+mse = mean_squared_error(y_test, y_pred)
+r2 = r2_score(y_test, y_pred)
+
+print(f"MSE : {mse:.4f}")
+print(f" R² : {r2:.4f}")
+
+encoded_cat_cols = (
+    model.named_steps['preprocessor']
+    .named_transformers_['cat']
+    .get_feature_names_out(categorical_cols)
+.tolist()
 )
+binary_cols = [col for col in X.columns if col not in categorical_cols]
+all_feature_names = encoded_cat_cols + binary_cols
 
-print(f"\n === CLASSES ===")
+coefficients = pd.DataFrame({
+    'Variable': all_feature_names,
+    'Coefficient': model.named_steps['regressor'].coef_
+})
+print("\n Model coefficients :")
+print(coefficients.to_string())
 
-model.fit(Y, Z_cov)
+fig, axes = plt.subplots(1, 2, figsize=(14, 6))
 
-X['predicted_class'] = model.predict(Y, Z_cov)
-report_means = X.groupby('predicted_class')[col_covariate].mean()
+# Plot 1: Actual vs. Predicted (Parity Plot)
+axes[0].scatter(y_test, y_pred, alpha=0.5, color='royalblue')
+axes[0].set_title("Actual vs. Predicted Values")
+axes[0].set_xlabel("Actual Note")
+axes[0].set_ylabel("Predicted Note")
 
-print("--- Rapport des moyennes des covariables par classe ---")
-print(report_means.T)
+# Plot 2: Residual Plot
+residuals = y_test - y_pred
+axes[1].scatter(y_pred, residuals, alpha=0.5, color='darkorange')
+axes[1].axhline(0,linestyle='--', lw=2)
+axes[1].set_title("Residual Plot")
+axes[1].set_xlabel("Predicted Note")
+axes[1].set_ylabel("Residuals (Actual - Predicted)")
 
-# print(f"\n === REGRESSION ===")
-#
-# for class_id in sorted(X['predicted_class'].unique()):
-#     print("="*80)
-#     print(f"--- Classe {class_id} ---")
-#     print("=" * 80)
-#     df_class = X[X['predicted_class'] == class_id].copy()
-#
-#     Z_pred = df_class[col_predictors].copy()
-#     Z_pred = Z_pred.loc[:, Z_pred.nunique() > 1]
-#     Z_pred = sm.add_constant(Z_pred)
-#     Y_class = y.loc[Z_pred.index]
-#
-#     regression_model = sm.OLS(Y_class, Z_pred).fit()
-#
-#     print(regression_model.summary())
+plt.tight_layout()
+plt.show()
