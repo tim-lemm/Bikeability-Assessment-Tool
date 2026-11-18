@@ -48,8 +48,8 @@ def load_and_preprocess_data(base_path, personnes_path, photos_path, drop="first
     return df_enc, encoded_cols
 
 
-def load_and_prepare_data(base_csv, personnes_csv, photos_csv, people = False):
-    df, encoded_cols= load_and_preprocess_data(base_csv, personnes_csv, photos_csv, drop=None, people = people)
+def load_and_prepare_data(base_csv, personnes_csv, photos_csv, people = False, drop = None):
+    df, encoded_cols= load_and_preprocess_data(base_csv, personnes_csv, photos_csv, drop=drop, people = people)
 
     X = df[encoded_cols].copy()
     y = df["note"].astype(int)
