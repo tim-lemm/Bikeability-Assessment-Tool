@@ -1,3 +1,6 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
 from utils_benchmark import import_and_merge_data_base
 from sklearn.preprocessing import LabelEncoder
 
