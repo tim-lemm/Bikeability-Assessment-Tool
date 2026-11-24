@@ -43,7 +43,7 @@ df_carac = df_personne[["id_personne"] + cols_personne].drop_duplicates(subset="
 df_personne = df_carac.merge(df_notes, on = "id_personne", how = "left")
 
 col_note = [f"note_{i}" for i in range(1,18)]
-
+col_stat = ["note_mean","note_std","note_min","note_max","note_med","note_q25","note_q75"]
 df_personne["note_mean"] = df_personne[col_note].mean(axis = 1)
 df_personne["note_std"] = df_personne[col_note].std(axis = 1)
 df_personne["note_min"] = df_personne[col_note].min(axis = 1)
@@ -56,8 +56,8 @@ df_personne["note_q75"] = quantiles.loc[0.75]
 # encodage pour le StepMix model
 original_mappings = {}
 label_encoder = LabelEncoder()
-for col in df.columns:
-    df[col] = label_encoder.fit_transform(df[col])
+for col in covariate_cols:
+    df_personne[col] = label_encoder.fit_transform(df_personne[col])
     original_mappings[col] = {i: label for i, label in enumerate(label_encoder.classes_)}
 
 # décommenter pour le dictionaire de l'encodage
@@ -67,13 +67,8 @@ for col in df.columns:
 #         print(f"  Code {encoded_val} -> {original_val}")
 
 # Train Test split
-y = df["note"].copy()
-X = df.drop(["note"], axis=1).copy()
-
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=RANDOM_STATE,
-                                                            stratify=y)
-X_cov_train = X_train[covariate_cols].copy()
-X_cov_test = X_test[covariate_cols].copy()
+y = df_personne[col_note].copy()
+X = df_personne.drop(col_note + col_stat + ["id_personne"], axis=1).copy()
 
 # definition et fit du StepMix model
 n_classes = 3
@@ -85,13 +80,12 @@ stepmix_model = StepMix(
     measurement="categorical",
     verbose=True
 )
-stepmix_model.fit(X_cov_train, y_train)
+stepmix_model.fit(X, y)
 
 # prediction de la class pour chaque réponses
-X_train["class"] = stepmix_model.predict(X_cov_train)
-X_test["class"] = stepmix_model.predict(X_cov_test)
+X["class"] = stepmix_model.predict(X)
 
-print(pd.crosstab(X_train["bike_use_frequency"], X_train["class"]))
+print(pd.crosstab(X["bike_use_frequency"], X["class"]))
 
 # changement d'encodage pour la regression linéaire
 encoder = OneHotEncoder(dtype="int",sparse_output=False, drop= "first")
