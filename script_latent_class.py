@@ -1,14 +1,4 @@
 from stepmix.stepmix import StepMix
-from utils_benchmark import load_and_prepare_data, import_and_merge_data_base
-from sklearn.model_selection import GridSearchCV
-from sklearn.preprocessing import OneHotEncoder, LabelEncoder
-from sklearn.compose import ColumnTransformer
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_squared_error, r2_score
-from sklearn.pipeline import Pipeline
-import matplotlib.pyplot as plt
-import pandas as pd
 from config import *
 from utils_latent_class import *
 
@@ -46,6 +36,7 @@ plot_notes_by_class(df_personne)
 plot_notes_by_class(df_personne, 1)
 plot_notes_by_class(df_personne, 2)
 plot_notes_by_class(df_personne, 6)
+
 # # changement d'encodage pour la regression linéaire
 # encoder = OneHotEncoder(dtype="int",sparse_output=False, drop= "first")
 # X_to_encode = X_train.loc[:, X_train.columns != 'class']
