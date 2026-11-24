@@ -20,7 +20,7 @@ categorical_cols = ["nbr_lane", "speed", "slope", "type", "green", "age", "gende
 covariate_cols = ["gender", "job", "age", "bike_use_frequency", "electric_bike", "bike_ownership", "type_bike"]
 
 df = import_and_merge_data_base(base_csv, personnes_csv, photos_csv)
-df.drop(["postal_code","type_bike_fold","type_bike_cargo", "type_bike_recumbent", "id_photo", "id_personne", "traffic"], axis=1, inplace=True)
+df.drop(["postal_code","type_bike_fold","type_bike_cargo", "type_bike_recumbent", "traffic"], axis=1, inplace=True)
 df["electric_bike"] = df["electric_bike"].astype(int)
 
 df["type_bike"] = "city"
@@ -28,6 +28,30 @@ df.loc[df["type_bike_allroad"] == 1, "type_bike"] = "allroad"
 df.loc[df["type_bike_road"] == 1, "type_bike"] = "road"
 
 df.drop(["type_bike_allroad", "type_bike_city", "type_bike_road"], axis=1, inplace=True)
+
+#transform df from long to large df_personne
+
+df_personne = df.copy()
+df_personne.drop(["nbr_lane", "speed", "slope", "green", "type"], axis=1, inplace=True)
+cols_personne = [c for c in df_personne.columns if c not in ["id_photo", "id_personne", "note"]]
+df_notes = df_personne.pivot(index="id_personne", columns="id_photo", values="note")
+df_notes.columns = [f"note_{col}" for col in df_notes.columns]
+df_notes.reset_index(inplace=True)
+
+df_carac = df_personne[["id_personne"] + cols_personne].drop_duplicates(subset="id_personne")
+
+df_personne = df_carac.merge(df_notes, on = "id_personne", how = "left")
+
+col_note = [f"note_{i}" for i in range(1,18)]
+
+df_personne["note_mean"] = df_personne[col_note].mean(axis = 1)
+df_personne["note_std"] = df_personne[col_note].std(axis = 1)
+df_personne["note_min"] = df_personne[col_note].min(axis = 1)
+df_personne["note_max"] = df_personne[col_note].max(axis = 1)
+df_personne["note_med"] = df_personne[col_note].median(axis = 1)
+quantiles = df_personne[col_note].quantile([0.25,0.75], axis = 1)
+df_personne["note_q25"] = quantiles.loc[0.25]
+df_personne["note_q75"] = quantiles.loc[0.75]
 
 # encodage pour le StepMix model
 original_mappings = {}
