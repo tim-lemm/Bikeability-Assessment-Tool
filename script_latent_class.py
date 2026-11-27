@@ -5,7 +5,7 @@ from sklearn.linear_model import LinearRegression, RidgeCV, LogisticRegression, 
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.cluster import KMeans
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score, precision_score
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score, precision_score, accuracy_score
 from sklearn.neural_network import MLPRegressor
 from sklearn.tree import DecisionTreeClassifier
 
@@ -85,15 +85,15 @@ X_train, X_test, y_train, y_test = train_test_split(X,y, test_size=0.2, random_s
 # changement d'encodage pour la regression linéaire
 encoder = OneHotEncoder(dtype="int",sparse_output=False, drop= "first")
 X_to_encode = X_train.loc[:, X_train.columns != 'class']
-array_enc = encoder.fit_transform(X_to_encode)
+
+
+X_train_enc_arr = encoder.fit_transform(X_train.drop(columns=["class"]))
 encoded_cols = encoder.get_feature_names_out(X_to_encode.columns)
-X_train_enc = pd.DataFrame(array_enc, columns=encoded_cols, index=X_train.index)
+X_train_enc = pd.DataFrame(X_train_enc_arr, columns=encoded_cols, index=X_train.index)
 X_train_enc["class"] = X_train["class"]
 
-X_to_encode = X_test.loc[:, X_test.columns != 'class']
-array_enc = encoder.fit_transform(X_to_encode)
-encoded_cols = encoder.get_feature_names_out(X_to_encode.columns)
-X_test_enc = pd.DataFrame(array_enc, columns=encoded_cols, index=X_test.index)
+X_test_enc_arr = encoder.transform(X_test.drop(columns=["class"]))
+X_test_enc = pd.DataFrame(X_test_enc_arr, columns=encoded_cols, index=X_test.index)
 X_test_enc["class"] = X_test["class"]
 
 
@@ -102,10 +102,10 @@ max_depth = 3
 for nbr_class in range(n_classes):
     X_train_class = X_train_enc[X_train_enc["class"] == nbr_class].drop(["class"], axis=1)
     X_test_class = X_test_enc[X_test_enc["class"] == nbr_class].drop(["class"], axis=1)
-    y_train_class = y_train[y_train.index.isin(X_train_class.index)]
-    y_test_class = y_test[y_test.index.isin(X_test_class.index)]
+    y_train_class = y_train.loc[X_train_class.index]
+    y_test_class = y_test.loc[X_test_class.index]
 
-    model = LinearRegression(random_state=RANDOM_STATE, max_depth=max_depth)
+    model = LinearRegression()
     model.fit(X_train_class, y_train_class)
 
     # coef = model.coef_
@@ -119,8 +119,8 @@ for nbr_class in range(n_classes):
     r2_train = r2_score(y_train_class, y_train_pred)
     r2_test = r2_score(y_test_class, y_test_pred)
 
-    precision_train = precision_score(y_train_class, y_train_pred)
-    precision_test = precision_score(y_test_class, y_test_pred)
+    acc_train = accuracy_score(y_train_class, np.rint(y_train_pred))
+    acc_test = accuracy_score(y_test_class, np.rint(y_test_pred))
 
     mse_train = mean_squared_error(y_train_class, y_train_pred)
     mse_test = mean_squared_error(y_test_class, y_test_pred)
@@ -129,14 +129,14 @@ for nbr_class in range(n_classes):
 
     # print(df_coef.to_string())
     print(f"R2 train: {r2_train:.4f}, R2 test: {r2_test:.4f}")
-    print(f"Precision score train: {precision_train:.4f}, Precision test: {precision_test:.4f}")
+    print(f"Accuracy score train: {acc_train:.4f}, Accuracy test: {acc_test:.4f}")
     print(f"MSE train: {mse_train:.4f}, MSE test: {mse_test:.4f}")
 
 #Regression pour toutes les classes (baseline)
 
 X_train_enc.drop(["class"], axis=1, inplace=True)
 X_test_enc.drop(["class"], axis=1, inplace=True)
-model = LinearRegression(random_state=RANDOM_STATE, max_depth=max_depth)
+model = LinearRegression()
 model.fit(X_train_enc, y_train)
 
 # coef = model.coef_
@@ -149,8 +149,8 @@ y_test_pred = model.predict(X_test_enc)
 r2_train = r2_score(y_train, y_train_pred)
 r2_test = r2_score(y_test, y_test_pred)
 
-precision_train = precision_score(y_train, y_train_pred)
-precision_test = precision_score(y_test, y_test_pred)
+acc_train = accuracy_score(y_train, np.rint(y_train_pred))
+acc_test = accuracy_score(y_test, np.rint(y_test_pred))
 
 mse_train = mean_squared_error(y_train, y_train_pred)
 mse_test = mean_squared_error(y_test, y_test_pred)
@@ -159,5 +159,5 @@ print(f"ALL CLASSES: ")
 
 # print(df_coef.to_string())
 print(f"R2 train: {r2_train:.4f}, R2 test: {r2_test:.4f}")
-print(f"Precision score train: {precision_train:.4f}, Precision test: {precision_test:.4f}")
+print(f"Accuracy score train: {acc_train:.4f}, accuracy test: {acc_test:.4f}")
 print(f"MSE train: {mse_train:.4f}, MSE test: {mse_test:.4f}")
